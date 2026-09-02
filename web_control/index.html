@@ -1,0 +1,649 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>HomeRobot 控制台</title>
+  <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js"></script>
+  <style>
+    :root {
+      --bg: #eef1ed;
+      --surface: #ffffff;
+      --surface-2: #f7f8f5;
+      --ink: #17201c;
+      --muted: #66716b;
+      --line: #d6dcd7;
+      --green: #146b4d;
+      --green-soft: #e4f0e9;
+      --orange: #c55a19;
+      --orange-soft: #fff0e5;
+      --cyan: #087d86;
+      --danger: #b83a31;
+      --shadow: 0 12px 34px rgba(29, 43, 36, .08);
+      font-family: "Noto Sans SC", "Microsoft YaHei", sans-serif;
+      color: var(--ink);
+      background: var(--bg);
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-width: 320px; background: var(--bg); }
+    button, select, input { font: inherit; letter-spacing: 0; }
+    button { cursor: pointer; }
+    button:focus-visible, select:focus-visible, input:focus-visible { outline: 3px solid rgba(8,125,134,.22); outline-offset: 2px; }
+    .app { min-height: 100vh; display: grid; grid-template-columns: 72px minmax(0, 1fr); }
+    .rail { background: #18231f; color: #cdd7d1; display: flex; flex-direction: column; align-items: center; padding: 18px 10px; gap: 22px; }
+    .brand { width: 42px; height: 42px; display: grid; place-items: center; border: 1px solid #4d5d55; color: #9ee1c2; font-family: Georgia, serif; font-weight: 700; }
+    .rail-nav { display: grid; gap: 10px; width: 100%; }
+    .icon-btn { border: 0; background: transparent; color: inherit; width: 44px; height: 44px; display: grid; place-items: center; border-radius: 6px; margin: 0 auto; }
+    .icon-btn:hover, .icon-btn.active { background: #2a3932; color: #fff; }
+    .icon-btn.active { box-shadow: inset 3px 0 #63c59a; }
+    .rail-bottom { margin-top: auto; display: grid; gap: 10px; }
+    .workspace { min-width: 0; display: grid; grid-template-rows: auto minmax(0, 1fr); }
+    .topbar { min-height: 72px; background: var(--surface); border-bottom: 1px solid var(--line); padding: 12px 24px; display: flex; align-items: center; justify-content: space-between; gap: 18px; }
+    .identity { min-width: 0; }
+    .identity h1 { margin: 0; font-family: "Songti SC", "SimSun", serif; font-size: 22px; letter-spacing: 0; }
+    .identity p { margin: 4px 0 0; color: var(--muted); font-size: 12px; }
+    .system-state { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
+    .status-item, .wifi-trigger { height: 38px; display: inline-flex; align-items: center; gap: 8px; padding: 0 11px; color: var(--muted); background: var(--surface-2); border: 1px solid var(--line); border-radius: 5px; font-size: 13px; }
+    .wifi-trigger:hover { color: var(--ink); border-color: #aab5ae; }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: #32a56f; box-shadow: 0 0 0 4px rgba(50,165,111,.12); }
+    .content { padding: 20px 24px 28px; min-width: 0; }
+    .dashboard { display: grid; grid-template-columns: minmax(520px, 1fr) 360px; gap: 18px; align-items: start; }
+    .left-stack { min-width: 0; display: grid; gap: 18px; }
+    .panel { background: var(--surface); border: 1px solid var(--line); border-radius: 7px; box-shadow: var(--shadow); }
+    .panel-head { min-height: 54px; padding: 10px 14px 10px 18px; display: flex; align-items: center; justify-content: space-between; gap: 12px; border-bottom: 1px solid var(--line); }
+    .panel-head h2 { margin: 0; font-size: 15px; font-weight: 700; }
+    .panel-head small { color: var(--muted); }
+    .select-compact { min-width: 150px; height: 34px; border: 1px solid var(--line); background: var(--surface); border-radius: 4px; padding: 0 30px 0 10px; color: var(--ink); }
+    .map-stage { position: relative; min-height: 470px; overflow: hidden; background-color: #e8ece7; background-image: linear-gradient(#dce2dc 1px, transparent 1px), linear-gradient(90deg, #dce2dc 1px, transparent 1px); background-size: 24px 24px; }
+    .map-stage svg { display: block; width: 100%; height: 470px; }
+    .room { fill: #f8faf7; stroke: #76857c; stroke-width: 3; cursor: pointer; transition: fill .18s, stroke .18s; }
+    .room:hover { fill: #eef5f0; }
+    .room.selected { fill: #dcefe4; stroke: var(--green); stroke-width: 4; }
+    .wall { stroke: #28372f; stroke-width: 8; stroke-linecap: square; }
+    .door { stroke: #e8ece7; stroke-width: 10; }
+    .room-label { fill: #2e3c34; font-size: 14px; pointer-events: none; font-weight: 700; text-anchor: middle; }
+    .room-area { fill: #728078; font-size: 11px; pointer-events: none; text-anchor: middle; }
+    .robot-marker { color: var(--green); filter: drop-shadow(0 3px 4px rgba(0,0,0,.2)); }
+    .route { stroke: var(--orange); stroke-width: 3; stroke-dasharray: 8 7; fill: none; opacity: .85; }
+    .route-point { fill: var(--orange); stroke: #fff; stroke-width: 3; }
+    .map-legend { position: absolute; left: 14px; bottom: 14px; display: flex; gap: 14px; padding: 8px 10px; background: rgba(255,255,255,.92); border: 1px solid var(--line); border-radius: 4px; color: var(--muted); font-size: 11px; }
+    .legend-key { display: inline-flex; align-items: center; gap: 6px; }
+    .legend-swatch { width: 11px; height: 11px; border-radius: 50%; background: var(--green); }
+    .legend-swatch.route-key { background: var(--orange); }
+    .activity { overflow: hidden; }
+    .task-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .task-table th { padding: 10px 14px; text-align: left; color: var(--muted); font-weight: 500; background: var(--surface-2); }
+    .task-table td { padding: 12px 14px; border-top: 1px solid var(--line); }
+    .task-table td:last-child, .task-table th:last-child { text-align: right; }
+    .task-name { font-weight: 700; }
+    .state { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); }
+    .state::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: #8e9b94; }
+    .state.running { color: var(--green); }
+    .state.running::before { background: #2f9c6a; }
+    .state.done::before { background: var(--cyan); }
+    .task-actions { display: inline-flex; align-items: center; justify-content: flex-end; gap: 4px; }
+    .task-action { width: 32px; height: 32px; display: inline-grid; place-items: center; border: 1px solid transparent; border-radius: 4px; color: var(--muted); background: transparent; }
+    .task-action:hover { color: var(--ink); background: var(--surface-2); border-color: var(--line); }
+    .task-action.delete:hover { color: var(--danger); background: #fff0ee; border-color: #ebc2bd; }
+    .composer { overflow: hidden; }
+    .composer-body { padding: 17px; display: grid; gap: 17px; }
+    .field { display: grid; gap: 8px; }
+    .field label, .field-title { font-size: 12px; color: var(--muted); font-weight: 700; }
+    .form-select, .form-input { width: 100%; min-height: 40px; padding: 0 11px; border: 1px solid var(--line); border-radius: 4px; background: var(--surface); color: var(--ink); }
+    .mode-control { display: grid; grid-template-columns: repeat(3, 1fr); border: 1px solid var(--line); border-radius: 5px; overflow: hidden; }
+    .mode-control button { height: 38px; border: 0; border-right: 1px solid var(--line); background: var(--surface); color: var(--muted); }
+    .mode-control button:last-child { border-right: 0; }
+    .mode-control button.active { color: #fff; background: var(--green); }
+    .targets { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+    .target-option { min-width: 0; min-height: 63px; padding: 9px; display: grid; grid-template-columns: 34px minmax(0, 1fr); gap: 8px; align-items: center; text-align: left; border: 1px solid var(--line); border-radius: 5px; background: var(--surface); color: var(--ink); }
+    .target-option:hover { border-color: #9eaba4; }
+    .target-option.active { border-color: var(--green); background: var(--green-soft); box-shadow: inset 0 0 0 1px var(--green); }
+    .target-icon { width: 32px; height: 32px; display: grid; place-items: center; color: var(--green); background: #edf4ef; border-radius: 4px; }
+    .target-option strong { display: block; font-size: 13px; }
+    .target-option small { display: block; margin-top: 3px; color: var(--muted); font-size: 10px; }
+    .policy { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; }
+    .policy > * { min-width: 0; }
+    .notice { display: none; padding: 10px 11px; border-left: 3px solid var(--orange); background: var(--orange-soft); color: #713d1d; font-size: 12px; line-height: 1.55; }
+    .notice.show { display: block; }
+    .summary { padding: 12px; background: var(--surface-2); border: 1px solid var(--line); border-radius: 5px; display: grid; gap: 7px; }
+    .summary-row { display: flex; justify-content: space-between; gap: 14px; font-size: 12px; }
+    .summary-row span { color: var(--muted); }
+    .summary-row strong { text-align: right; }
+    .primary { width: 100%; min-height: 44px; border: 0; border-radius: 5px; background: var(--green); color: #fff; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 8px; }
+    .primary:hover { background: #0f5c41; }
+    .primary:disabled { cursor: not-allowed; opacity: .45; }
+    dialog { width: min(520px, calc(100vw - 28px)); padding: 0; border: 1px solid var(--line); border-radius: 7px; color: var(--ink); box-shadow: 0 24px 80px rgba(20,31,25,.25); }
+    dialog::backdrop { background: rgba(23,32,28,.52); }
+    .dialog-head { min-height: 60px; display: flex; align-items: center; justify-content: space-between; padding: 10px 12px 10px 18px; border-bottom: 1px solid var(--line); }
+    .dialog-head h2 { margin: 0; font-size: 16px; }
+    .dialog-body { padding: 16px 18px 20px; display: grid; gap: 15px; }
+    .network-list { display: grid; border: 1px solid var(--line); border-radius: 5px; overflow: hidden; }
+    .network { min-height: 52px; padding: 8px 11px; display: flex; align-items: center; justify-content: space-between; gap: 12px; border: 0; border-bottom: 1px solid var(--line); background: var(--surface); text-align: left; }
+    .network:last-child { border-bottom: 0; }
+    .network:hover, .network.active { background: var(--green-soft); }
+    .network-name { display: flex; align-items: center; gap: 10px; }
+    .network small { color: var(--muted); }
+    .wifi-actions { display: grid; grid-template-columns: 1fr 130px; gap: 10px; }
+    .secondary { min-height: 40px; border: 1px solid var(--line); border-radius: 5px; background: var(--surface); color: var(--ink); }
+    .danger-button { min-height: 40px; border: 0; border-radius: 5px; background: var(--danger); color: #fff; font-weight: 700; }
+    .feature-dialog { width: min(720px, calc(100vw - 28px)); }
+    .feature-content { padding: 0; }
+    .feature-list { display: grid; border: 1px solid var(--line); border-radius: 5px; overflow: hidden; }
+    .feature-row { min-height: 58px; padding: 10px 12px; display: flex; align-items: center; justify-content: space-between; gap: 14px; border-bottom: 1px solid var(--line); }
+    .feature-row:last-child { border-bottom: 0; }
+    .feature-row-main { min-width: 0; display: flex; align-items: center; gap: 11px; }
+    .feature-row-main > i { color: var(--green); flex: 0 0 auto; }
+    .feature-row strong, .feature-row small { display: block; }
+    .feature-row small { margin-top: 3px; color: var(--muted); }
+    .tag { display: inline-flex; align-items: center; min-height: 25px; padding: 0 8px; border-radius: 3px; color: var(--green); background: var(--green-soft); font-size: 11px; white-space: nowrap; }
+    .log-list { display: grid; gap: 0; font: 12px/1.55 Consolas, monospace; border: 1px solid var(--line); border-radius: 5px; overflow: hidden; }
+    .log-line { display: grid; grid-template-columns: 72px 54px 1fr; gap: 9px; padding: 9px 11px; border-bottom: 1px solid var(--line); }
+    .log-line:last-child { border-bottom: 0; }
+    .log-time { color: var(--muted); }
+    .log-level { color: var(--cyan); }
+    .log-level.warn { color: var(--orange); }
+    .settings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .switch-row { min-height: 48px; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 9px 0; border-bottom: 1px solid var(--line); }
+    .switch-row:last-child { border-bottom: 0; }
+    .switch { width: 42px; height: 24px; position: relative; flex: 0 0 auto; }
+    .switch input { position: absolute; opacity: 0; }
+    .switch span { position: absolute; inset: 0; border-radius: 12px; background: #aeb8b2; transition: .18s; }
+    .switch span::after { content: ""; position: absolute; width: 18px; height: 18px; left: 3px; top: 3px; border-radius: 50%; background: #fff; transition: .18s; }
+    .switch input:checked + span { background: var(--green); }
+    .switch input:checked + span::after { transform: translateX(18px); }
+    .dialog-actions { display: flex; justify-content: flex-end; gap: 9px; }
+    .toast { position: fixed; right: 22px; bottom: 22px; max-width: 360px; padding: 13px 15px; display: flex; align-items: center; gap: 10px; color: #fff; background: #17251f; border-radius: 6px; box-shadow: 0 14px 34px rgba(0,0,0,.22); transform: translateY(25px); opacity: 0; pointer-events: none; transition: .22s ease; z-index: 20; }
+    .toast.show { transform: translateY(0); opacity: 1; }
+    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+    @media (max-width: 1040px) { .dashboard { grid-template-columns: 1fr; } .composer { order: -1; } .composer-body { grid-template-columns: repeat(2, minmax(0, 1fr)); } .composer-body > .full { grid-column: 1 / -1; } }
+    @media (max-width: 700px) { body { overflow-x: hidden; } .app { grid-template-columns: minmax(0, 1fr); } .rail { display: none; } .topbar { flex-direction: column; align-items: stretch; padding: 13px 14px; } .system-state { justify-content: flex-start; overflow-x: auto; padding-bottom: 2px; } .status-item:nth-child(2), .status-item:nth-child(3) { display: none; } .content { padding: 12px; } .dashboard, .left-stack, .composer { min-width: 0; } .composer-body { grid-template-columns: minmax(0, 1fr); } .composer-body > .full { grid-column: auto; } .targets { grid-template-columns: minmax(0, 1fr); } .policy, .settings-grid { grid-template-columns: minmax(0, 1fr); } .map-stage, .map-stage svg { min-height: 360px; height: 360px; } .task-table th:nth-child(3), .task-table td:nth-child(3) { display: none; } .task-table th, .task-table td { padding-left: 9px; padding-right: 9px; } }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="rail" aria-label="主导航">
+      <div class="brand" aria-label="HomeRobot">HR</div>
+      <nav class="rail-nav">
+        <button class="icon-btn active" data-view="tasks" aria-label="任务控制" title="任务控制"><i data-lucide="route"></i></button>
+        <button class="icon-btn" data-view="maps" aria-label="地图管理" title="地图管理"><i data-lucide="map"></i></button>
+        <button class="icon-btn" data-view="targets" aria-label="目标记录" title="目标记录"><i data-lucide="scan-search"></i></button>
+        <button class="icon-btn" data-view="logs" aria-label="运行日志" title="运行日志"><i data-lucide="scroll-text"></i></button>
+      </nav>
+      <div class="rail-bottom">
+        <button class="icon-btn" data-view="settings" aria-label="系统设置" title="系统设置"><i data-lucide="settings-2"></i></button>
+      </div>
+    </aside>
+
+    <div class="workspace">
+      <header class="topbar">
+        <div class="identity">
+          <h1>家庭服务机器人控制台</h1>
+          <p>HR-01 · RK3588 / ROS 2 Humble</p>
+        </div>
+        <div class="system-state">
+          <div class="status-item"><span class="dot"></span>机器人在线</div>
+          <div class="status-item"><i data-lucide="battery-medium"></i>78%</div>
+          <div class="status-item"><i data-lucide="navigation"></i>AMCL 已定位</div>
+          <button id="wifiTrigger" class="wifi-trigger"><i data-lucide="wifi"></i><span id="wifiTopText">Home_5G</span></button>
+        </div>
+      </header>
+
+      <main class="content">
+        <div class="dashboard">
+          <div class="left-stack">
+            <section class="panel">
+              <div class="panel-head">
+                <div><h2>任务地图</h2><small id="mapMeta">一层住宅 · 2026-08-28 更新</small></div>
+                <select id="mapSelect" class="select-compact" aria-label="选择地图">
+                  <option value="home1">住宅一层</option>
+                  <option value="home2">住宅二层</option>
+                  <option value="lab">调试场地</option>
+                </select>
+              </div>
+              <div class="map-stage">
+                <svg viewBox="0 0 760 470" role="img" aria-label="住宅一层任务地图">
+                  <rect class="room selected" data-area="living" x="65" y="60" width="305" height="235" rx="2"/>
+                  <rect class="room" data-area="kitchen" x="370" y="60" width="245" height="145" rx="2"/>
+                  <rect class="room" data-area="corridor" x="370" y="205" width="245" height="90" rx="2"/>
+                  <rect class="room" data-area="bedroom" x="65" y="295" width="260" height="125" rx="2"/>
+                  <rect class="room" data-area="study" x="325" y="295" width="290" height="125" rx="2"/>
+                  <line class="wall" x1="65" y1="60" x2="615" y2="60"/>
+                  <line class="wall" x1="65" y1="420" x2="615" y2="420"/>
+                  <line class="wall" x1="65" y1="60" x2="65" y2="420"/>
+                  <line class="wall" x1="615" y1="60" x2="615" y2="420"/>
+                  <line class="wall" x1="370" y1="60" x2="370" y2="295"/>
+                  <line class="wall" x1="65" y1="295" x2="615" y2="295"/>
+                  <line class="wall" x1="325" y1="295" x2="325" y2="420"/>
+                  <line class="wall" x1="370" y1="205" x2="615" y2="205"/>
+                  <line class="door" x1="343" y1="295" x2="386" y2="295"/>
+                  <line class="door" x1="370" y1="225" x2="370" y2="266"/>
+                  <line class="door" x1="188" y1="295" x2="229" y2="295"/>
+                  <line class="door" x1="325" y1="333" x2="325" y2="374"/>
+                  <text class="room-label" data-label="living" x="215" y="158">客厅</text><text class="room-area" x="215" y="180">28.4 m²</text>
+                  <text class="room-label" data-label="kitchen" x="492" y="124">厨房</text><text class="room-area" x="492" y="146">14.2 m²</text>
+                  <text class="room-label" data-label="corridor" x="492" y="254">走廊</text>
+                  <text class="room-label" data-label="bedroom" x="195" y="351">卧室</text><text class="room-area" x="195" y="373">16.8 m²</text>
+                  <text class="room-label" data-label="study" x="470" y="351">书房</text><text class="room-area" x="470" y="373">17.5 m²</text>
+                  <path id="routePath" class="route" d="M188 252 C245 218 279 225 315 162 C339 120 301 101 260 115"/>
+                  <circle class="route-point" cx="260" cy="115" r="7"/>
+                  <g class="robot-marker" transform="translate(188 252)"><circle r="17" fill="currentColor"/><path d="M0 -10 L7 7 L0 4 L-7 7 Z" fill="#fff"/></g>
+                </svg>
+                <div class="map-legend"><span class="legend-key"><span class="legend-swatch"></span>机器人</span><span class="legend-key"><span class="legend-swatch route-key"></span>搜索路线</span></div>
+              </div>
+            </section>
+
+            <section class="panel activity">
+              <div class="panel-head"><h2>任务队列</h2><small id="taskCount">2 项</small></div>
+              <table class="task-table">
+                <thead><tr><th>任务</th><th>区域</th><th>目标</th><th>状态</th><th><span class="sr-only">操作</span></th></tr></thead>
+                <tbody id="taskRows">
+                  <tr data-task-id="task-001"><td class="task-name">晚间巡检</td><td>客厅 → 走廊</td><td>人员异常</td><td><span class="state running">执行中</span></td><td><span class="task-actions"><button class="task-action toggle" aria-label="停止晚间巡检" title="停止任务"><i data-lucide="square"></i></button><button class="task-action delete" aria-label="删除晚间巡检" title="删除任务"><i data-lucide="trash-2"></i></button></span></td></tr>
+                  <tr data-task-id="task-002"><td class="task-name">垃圾桶观察</td><td>厨房</td><td>垃圾桶</td><td><span class="state">等待</span></td><td><span class="task-actions"><button class="task-action toggle" aria-label="启动垃圾桶观察" title="启动任务"><i data-lucide="play"></i></button><button class="task-action delete" aria-label="删除垃圾桶观察" title="删除任务"><i data-lucide="trash-2"></i></button></span></td></tr>
+                </tbody>
+              </table>
+            </section>
+          </div>
+
+          <aside class="panel composer">
+            <div class="panel-head"><div><h2>发布新任务</h2><small>任务编号自动生成</small></div><i data-lucide="clipboard-plus"></i></div>
+            <div class="composer-body">
+              <div class="field">
+                <label for="taskName">任务名称</label>
+                <input id="taskName" class="form-input" value="客厅目标搜索" maxlength="30">
+              </div>
+              <div class="field">
+                <label for="areaSelect">搜索区域</label>
+                <select id="areaSelect" class="form-select">
+                  <option value="living">客厅</option><option value="kitchen">厨房</option><option value="corridor">走廊</option><option value="bedroom">卧室</option><option value="study">书房</option>
+                </select>
+              </div>
+              <div class="field full">
+                <span class="field-title">任务模式</span>
+                <div id="modeControl" class="mode-control">
+                  <button data-mode="search" class="active">搜索</button><button data-mode="follow">跟随</button><button data-mode="observe">仅观察</button>
+                </div>
+              </div>
+              <div class="field full">
+                <span class="field-title">目标类别</span>
+                <div id="targets" class="targets">
+                  <button class="target-option active" data-target="人员" data-trackable="true"><span class="target-icon"><i data-lucide="person-standing"></i></span><span><strong>人员</strong><small>雷达关联 · 可跟随</small></span></button>
+                  <button class="target-option" data-target="纸箱" data-trackable="true"><span class="target-icon"><i data-lucide="package"></i></span><span><strong>纸箱</strong><small>雷达关联 · 可接近</small></span></button>
+                  <button class="target-option" data-target="垃圾桶" data-trackable="true"><span class="target-icon"><i data-lucide="trash-2"></i></span><span><strong>垃圾桶</strong><small>雷达关联 · 可接近</small></span></button>
+                  <button class="target-option" data-target="杯子" data-trackable="false"><span class="target-icon"><i data-lucide="coffee"></i></span><span><strong>杯子</strong><small>相机识别 · 仅观察</small></span></button>
+                </div>
+              </div>
+              <div class="field full">
+                <span class="field-title">跟随策略</span>
+                <div class="policy">
+                  <select id="distancePolicy" class="form-select" aria-label="跟随距离"><option>保持 1.0 m</option><option>保持 0.8 m</option><option>保持 1.2 m</option></select>
+                  <select id="speedPolicy" class="form-select" aria-label="速度等级"><option>低速 · 0.25 m/s</option><option>标准 · 0.40 m/s</option></select>
+                </div>
+              </div>
+              <div id="capabilityNotice" class="notice full">杯子通常不与 2D 激光扫描平面相交，只能发布“搜索”或“仅观察”任务，不能发布自动跟随。</div>
+              <div class="summary full">
+                <div class="summary-row"><span>地图</span><strong id="summaryMap">住宅一层</strong></div>
+                <div class="summary-row"><span>区域</span><strong id="summaryArea">客厅</strong></div>
+                <div class="summary-row"><span>目标 / 模式</span><strong id="summaryTarget">人员 · 搜索</strong></div>
+                <div class="summary-row"><span>安全链路</span><strong>雷达避障已启用</strong></div>
+              </div>
+              <button id="publishTask" class="primary full"><i data-lucide="send"></i>发布任务</button>
+            </div>
+          </aside>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <dialog id="wifiDialog">
+    <div class="dialog-head"><div><h2>连接 WiFi</h2><small id="wifiDialogState">当前连接：Home_5G</small></div><button id="wifiClose" class="icon-btn" aria-label="关闭"><i data-lucide="x"></i></button></div>
+    <div class="dialog-body">
+      <div id="networkList" class="network-list">
+        <button class="network active" data-ssid="Home_5G"><span class="network-name"><i data-lucide="wifi"></i><span><strong>Home_5G</strong><small>已连接 · WPA2</small></span></span><i data-lucide="signal-high"></i></button>
+        <button class="network" data-ssid="Home_2.4G"><span class="network-name"><i data-lucide="wifi"></i><span><strong>Home_2.4G</strong><small>WPA2</small></span></span><i data-lucide="signal-medium"></i></button>
+        <button class="network" data-ssid="RobotLab"><span class="network-name"><i data-lucide="wifi"></i><span><strong>RobotLab</strong><small>WPA3</small></span></span><i data-lucide="signal-high"></i></button>
+        <button class="network" data-ssid="Guest"><span class="network-name"><i data-lucide="wifi"></i><span><strong>Guest</strong><small>开放网络</small></span></span><i data-lucide="signal-low"></i></button>
+      </div>
+      <div class="field"><label for="wifiPassword">网络密码</label><input id="wifiPassword" class="form-input" type="password" placeholder="输入所选网络密码" autocomplete="current-password"></div>
+      <div class="wifi-actions"><button id="wifiScan" class="secondary"><i data-lucide="refresh-cw"></i> 重新扫描</button><button id="wifiConnect" class="primary">连接</button></div>
+    </div>
+  </dialog>
+
+  <dialog id="featureDialog" class="feature-dialog">
+    <div class="dialog-head"><div><h2 id="featureTitle">地图管理</h2><small id="featureSubtitle"></small></div><button id="featureClose" class="icon-btn" aria-label="关闭"><i data-lucide="x"></i></button></div>
+    <div id="featureContent" class="dialog-body feature-content"></div>
+  </dialog>
+
+  <dialog id="deleteDialog">
+    <div class="dialog-head"><div><h2>删除任务</h2><small>此操作只删除队列记录</small></div><button id="deleteClose" class="icon-btn" aria-label="关闭"><i data-lucide="x"></i></button></div>
+    <div class="dialog-body">
+      <p id="deleteMessage" style="margin:0; line-height:1.7; color:var(--muted)"></p>
+      <div class="dialog-actions"><button id="deleteCancel" class="secondary" style="padding:0 18px">取消</button><button id="deleteConfirm" class="danger-button" style="padding:0 18px">确认删除</button></div>
+    </div>
+  </dialog>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"><i data-lucide="circle-check"></i><span id="toastText"></span></div>
+
+  <script>
+    const maps = {
+      home1: { name: '住宅一层', meta: '一层住宅 · 2026-08-28 更新' },
+      home2: { name: '住宅二层', meta: '二层住宅 · 2026-08-25 更新' },
+      lab: { name: '调试场地', meta: '研发实验室 · 2026-08-31 更新' }
+    };
+    const areaNames = { living: '客厅', kitchen: '厨房', corridor: '走廊', bedroom: '卧室', study: '书房' };
+    const modeNames = { search: '搜索', follow: '跟随', observe: '仅观察' };
+    const state = { map: 'home1', area: 'living', target: '人员', trackable: true, mode: 'search', wifi: 'Home_5G', tasks: 2, backendOnline: false };
+    const $ = selector => document.querySelector(selector);
+    const $$ = selector => [...document.querySelectorAll(selector)];
+
+    function refreshSummary() {
+      $('#summaryMap').textContent = maps[state.map].name;
+      $('#summaryArea').textContent = areaNames[state.area];
+      $('#summaryTarget').textContent = `${state.target} · ${modeNames[state.mode]}`;
+      const invalid = state.mode === 'follow' && !state.trackable;
+      $('#capabilityNotice').classList.toggle('show', invalid);
+      $('#publishTask').disabled = invalid;
+      $('#distancePolicy').disabled = state.mode !== 'follow';
+      $('#speedPolicy').disabled = state.mode !== 'follow';
+    }
+
+    function selectArea(area) {
+      state.area = area;
+      $('#areaSelect').value = area;
+      $$('.room').forEach(room => room.classList.toggle('selected', room.dataset.area === area));
+      refreshSummary();
+    }
+
+    $('#mapSelect').addEventListener('change', event => {
+      state.map = event.target.value;
+      $('#mapMeta').textContent = maps[state.map].meta;
+      refreshSummary();
+    });
+    $('#areaSelect').addEventListener('change', event => selectArea(event.target.value));
+    $$('.room').forEach(room => room.addEventListener('click', () => selectArea(room.dataset.area)));
+    $$('#modeControl button').forEach(button => button.addEventListener('click', () => {
+      state.mode = button.dataset.mode;
+      $$('#modeControl button').forEach(item => item.classList.toggle('active', item === button));
+      refreshSummary();
+    }));
+    $$('.target-option').forEach(button => button.addEventListener('click', () => {
+      state.target = button.dataset.target;
+      state.trackable = button.dataset.trackable === 'true';
+      $$('.target-option').forEach(item => item.classList.toggle('active', item === button));
+      refreshSummary();
+    }));
+
+    function showToast(message) {
+      $('#toastText').textContent = message;
+      $('#toast').classList.add('show');
+      window.clearTimeout(showToast.timer);
+      showToast.timer = window.setTimeout(() => $('#toast').classList.remove('show'), 2600);
+    }
+
+    async function apiFetch(path, options = {}) {
+      const response = await fetch(path, {
+        ...options,
+        headers: { 'Content-Type': 'application/json', ...(options.headers || {}) }
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error?.message || '后端请求失败');
+      return data;
+    }
+
+    function refreshIcons(root = document) {
+      if (window.lucide) window.lucide.createIcons({ attrs: { width: 17, height: 17, 'stroke-width': 1.8 }, nameAttr: 'data-lucide', root });
+    }
+
+    function updateTaskCount() {
+      state.tasks = $$('#taskRows tr').length;
+      $('#taskCount').textContent = `${state.tasks} 项`;
+    }
+
+    function taskStatusText(task) {
+      const status = task.status || '';
+      if (status === 'RUNNING') return ['state running', '执行中', 'square', '取消任务'];
+      if (status === 'DONE') return ['state done', '已完成', 'check', '任务已完成'];
+      if (status === 'CANCELLED') return ['state done', '已取消', 'circle-slash', '任务已取消'];
+      if (status === 'FAILED' || status === 'REJECTED') return ['state', '已拒绝', 'triangle-alert', '任务未执行'];
+      return ['state', '等待', 'play', '等待准入'];
+    }
+
+    function renderTasks(tasks) {
+      $('#taskRows').innerHTML = '';
+      tasks.forEach(task => {
+        const [statusClass, statusText, iconName, buttonTitle] = taskStatusText(task);
+        const row = document.createElement('tr');
+        row.dataset.taskId = task.task_id;
+        row.innerHTML = `<td class="task-name"></td><td></td><td></td><td><span class="${statusClass}"></span></td><td><span class="task-actions"><button class="task-action toggle" aria-label="${buttonTitle}" title="${buttonTitle}"><i data-lucide="${iconName}"></i></button><button class="task-action delete" aria-label="删除任务" title="删除任务"><i data-lucide="trash-2"></i></button></span></td>`;
+        row.children[0].textContent = task.name;
+        row.children[1].textContent = task.area_name || areaNames[task.area_id] || task.area_id;
+        row.children[2].textContent = `${task.target_class} · ${task.mode_name || modeNames[task.mode] || task.mode}`;
+        row.querySelector('.state').textContent = statusText;
+        $('#taskRows').appendChild(row);
+        wireTaskRow(row);
+      });
+      updateTaskCount();
+      refreshIcons($('#taskRows'));
+    }
+
+    function setTaskState(row, running) {
+      const status = row.querySelector('.state');
+      const toggle = row.querySelector('.task-action.toggle');
+      const taskName = row.querySelector('.task-name').textContent;
+      status.className = running ? 'state running' : 'state done';
+      status.textContent = running ? '执行中' : '已停止';
+      toggle.innerHTML = `<i data-lucide="${running ? 'square' : 'play'}"></i>`;
+      toggle.title = running ? '停止任务' : '启动任务';
+      toggle.setAttribute('aria-label', `${running ? '停止' : '启动'}${taskName}`);
+      refreshIcons(toggle);
+    }
+
+    let pendingDeleteRow = null;
+    function wireTaskRow(row) {
+      row.querySelector('.task-action.toggle').addEventListener('click', async () => {
+        const currentlyRunning = row.querySelector('.state').classList.contains('running');
+        if (!currentlyRunning) {
+          showToast('任务必须由后端准入后启动，网页不直接启动旧任务');
+          return;
+        }
+        try {
+          const task = await apiFetch(`/api/tasks/${row.dataset.taskId}/cancel`, {
+            method: 'POST',
+            body: JSON.stringify({ reason: '用户通过网页取消任务' })
+          });
+          renderTasks([task, ...$$('#taskRows tr').filter(item => item !== row).map(item => ({
+            task_id: item.dataset.taskId,
+            name: item.querySelector('.task-name').textContent,
+            area_name: item.children[1].textContent,
+            target_class: item.children[2].textContent.split(' · ')[0],
+            mode_name: item.children[2].textContent.split(' · ')[1],
+            status: item.querySelector('.state').classList.contains('done') ? 'DONE' : 'ACCEPTED'
+          }))]);
+          showToast(`${task.name}已取消`);
+        } catch (error) {
+          showToast(error.message);
+        }
+      });
+      row.querySelector('.task-action.delete').addEventListener('click', () => {
+        pendingDeleteRow = row;
+        const running = row.querySelector('.state').classList.contains('running');
+        const name = row.querySelector('.task-name').textContent;
+        $('#deleteMessage').textContent = running ? `“${name}”正在执行。确认删除后将先停止任务，再从队列中移除。` : `确认从任务队列中删除“${name}”？`;
+        $('#deleteDialog').showModal();
+      });
+    }
+
+    $$('#taskRows tr').forEach(wireTaskRow);
+
+    $('#publishTask').addEventListener('click', async () => {
+      const name = $('#taskName').value.trim() || `${areaNames[state.area]}目标任务`;
+      $('#publishTask').disabled = true;
+      try {
+        const task = await apiFetch('/api/tasks', {
+          method: 'POST',
+          body: JSON.stringify({
+            request_id: `web-${Date.now()}`,
+            name,
+            map_id: state.map,
+            area_id: state.area,
+            target_class: state.target,
+            mode: state.mode,
+            distance_policy: $('#distancePolicy').value,
+            speed_policy: $('#speedPolicy').value
+          })
+        });
+        renderTasks([task, ...$$('#taskRows tr').map(row => ({
+          task_id: row.dataset.taskId,
+          name: row.querySelector('.task-name').textContent,
+          area_name: row.children[1].textContent,
+          target_class: row.children[2].textContent.split(' · ')[0],
+          mode_name: row.children[2].textContent.split(' · ')[1],
+          status: row.querySelector('.state').classList.contains('running') ? 'RUNNING' : row.querySelector('.state').classList.contains('done') ? 'DONE' : 'ACCEPTED'
+        }))]);
+        showToast(`任务“${task.name}”已提交后端`);
+      } catch (error) {
+        showToast(error.message);
+      } finally {
+        $('#publishTask').disabled = false;
+        refreshSummary();
+      }
+    });
+
+    const deleteDialog = $('#deleteDialog');
+    $('#deleteClose').addEventListener('click', () => deleteDialog.close());
+    $('#deleteCancel').addEventListener('click', () => deleteDialog.close());
+    $('#deleteConfirm').addEventListener('click', () => {
+      if (!pendingDeleteRow) return;
+      const name = pendingDeleteRow.querySelector('.task-name').textContent;
+      fetch(`/api/tasks/${pendingDeleteRow.dataset.taskId}`, { method: 'DELETE' }).catch(() => {});
+      pendingDeleteRow.remove();
+      pendingDeleteRow = null;
+      updateTaskCount();
+      deleteDialog.close();
+      showToast(`任务“${name}”已删除`);
+    });
+    deleteDialog.addEventListener('click', event => { if (event.target === deleteDialog) deleteDialog.close(); });
+
+    const featureDialog = $('#featureDialog');
+    const featureViews = {
+      maps: {
+        title: '地图管理', subtitle: '选择机器人当前使用的二维栅格地图',
+        html: () => `<div class="feature-list">${Object.entries(maps).map(([id, map]) => `<div class="feature-row"><span class="feature-row-main"><i data-lucide="map"></i><span><strong>${map.name}</strong><small>${map.meta}</small></span></span>${state.map === id ? '<span class="tag">当前地图</span>' : `<button class="secondary" data-load-map="${id}" style="padding:0 14px">加载</button>`}</div>`).join('')}</div>`
+      },
+      targets: {
+        title: '目标记录', subtitle: '最近一次搜索任务的识别与雷达关联结果',
+        html: () => `<div class="feature-list"><div class="feature-row"><span class="feature-row-main"><i data-lucide="person-standing"></i><span><strong>人员 · track_07</strong><small>客厅 · 置信度 0.92 · 雷达距离 1.84 m</small></span></span><span class="tag">关联有效</span></div><div class="feature-row"><span class="feature-row-main"><i data-lucide="trash-2"></i><span><strong>垃圾桶 · track_03</strong><small>厨房 · 置信度 0.88 · 雷达距离 2.16 m</small></span></span><span class="tag">关联有效</span></div><div class="feature-row"><span class="feature-row-main"><i data-lucide="coffee"></i><span><strong>杯子 · detection_12</strong><small>书房 · 置信度 0.81 · 无雷达关联</small></span></span><span class="tag" style="color:var(--orange);background:var(--orange-soft)">仅观察</span></div></div>`
+      },
+      logs: {
+        title: '运行日志', subtitle: '机器人当前会话的关键状态变化',
+        html: () => `<div class="log-list" id="logList"><div class="log-line"><span class="log-time">10:21:08</span><span class="log-level">INFO</span><span>hr_task_manager：晚间巡检进入客厅搜索点</span></div><div class="log-line"><span class="log-time">10:21:12</span><span class="log-level">INFO</span><span>hr_target_tracker：人员 track_07 关联有效</span></div><div class="log-line"><span class="log-time">10:21:13</span><span class="log-level warn">WARN</span><span>目标短时遮挡，保持零速等待重新锁定</span></div><div class="log-line"><span class="log-time">10:21:14</span><span class="log-level">INFO</span><span>目标重新锁定，恢复局部跟随</span></div></div><div class="dialog-actions"><button class="secondary" data-clear-logs style="padding:0 16px">清空显示</button></div>`
+      },
+      settings: {
+        title: '系统设置', subtitle: '任务与安全策略的前端配置',
+        html: () => `<div class="settings-grid"><div class="field"><label for="settingSpeed">默认速度等级</label><select id="settingSpeed" class="form-select"><option>低速 · 0.25 m/s</option><option>标准 · 0.40 m/s</option></select></div><div class="field"><label for="settingTimeout">目标丢失超时</label><select id="settingTimeout" class="form-select"><option>1.0 秒</option><option>1.5 秒</option><option>2.0 秒</option></select></div></div><div><div class="switch-row"><span><strong>Collision Monitor</strong><small>激光雷达安全停车</small></span><label class="switch"><input type="checkbox" checked><span></span></label></div><div class="switch-row"><span><strong>任务完成通知</strong><small>在 Web 控制台显示完成消息</small></span><label class="switch"><input type="checkbox" checked><span></span></label></div></div><div class="dialog-actions"><button class="primary" data-save-settings style="width:auto;padding:0 20px">保存设置</button></div>`
+      }
+    };
+
+    function openFeature(view) {
+      const config = featureViews[view];
+      if (!config) return;
+      $('#featureTitle').textContent = config.title;
+      $('#featureSubtitle').textContent = config.subtitle;
+      $('#featureContent').innerHTML = config.html();
+      refreshIcons($('#featureContent'));
+      featureDialog.showModal();
+      $$('[data-load-map]').forEach(button => button.addEventListener('click', () => {
+        state.map = button.dataset.loadMap;
+        $('#mapSelect').value = state.map;
+        $('#mapMeta').textContent = maps[state.map].meta;
+        refreshSummary();
+        featureDialog.close();
+        showToast(`已加载${maps[state.map].name}`);
+      }));
+      const clearLogs = $('[data-clear-logs]');
+      if (clearLogs) clearLogs.addEventListener('click', () => { $('#logList').innerHTML = ''; showToast('日志显示已清空'); });
+      const saveSettings = $('[data-save-settings]');
+      if (saveSettings) saveSettings.addEventListener('click', () => { featureDialog.close(); showToast('系统设置已保存'); });
+    }
+
+    $$('.icon-btn[data-view]').forEach(button => button.addEventListener('click', () => {
+      $$('.icon-btn[data-view]').forEach(item => item.classList.toggle('active', item === button));
+      if (button.dataset.view === 'tasks') { window.scrollTo({ top: 0, behavior: 'smooth' }); return; }
+      openFeature(button.dataset.view);
+    }));
+    $('#featureClose').addEventListener('click', () => featureDialog.close());
+    featureDialog.addEventListener('click', event => { if (event.target === featureDialog) featureDialog.close(); });
+
+    const wifiDialog = $('#wifiDialog');
+    $('#wifiTrigger').addEventListener('click', () => wifiDialog.showModal());
+    $('#wifiClose').addEventListener('click', () => wifiDialog.close());
+    wifiDialog.addEventListener('click', event => { if (event.target === wifiDialog) wifiDialog.close(); });
+    $$('.network').forEach(network => network.addEventListener('click', () => {
+      $$('.network').forEach(item => item.classList.toggle('active', item === network));
+      $('#wifiPassword').disabled = network.dataset.ssid === 'Guest';
+      if ($('#wifiPassword').disabled) $('#wifiPassword').value = '';
+    }));
+    $('#wifiScan').addEventListener('click', () => {
+      const icon = $('#wifiScan i');
+      icon.style.transform = 'rotate(180deg)';
+      setTimeout(() => { icon.style.transform = ''; showToast('WiFi 扫描完成'); }, 450);
+    });
+    $('#wifiConnect').addEventListener('click', () => {
+      const selected = $('.network.active');
+      if (!selected) return;
+      const ssid = selected.dataset.ssid;
+      if (ssid !== 'Guest' && !$('#wifiPassword').value && ssid !== state.wifi) {
+        $('#wifiPassword').focus();
+        showToast('请输入网络密码');
+        return;
+      }
+      $('#wifiConnect').disabled = true;
+      $('#wifiConnect').textContent = '连接中…';
+      setTimeout(async () => {
+        try { await apiFetch('/api/wifi/connect', { method: 'POST', body: JSON.stringify({ ssid }) }); } catch (error) { showToast(error.message); }
+        state.wifi = ssid;
+        $('#wifiTopText').textContent = ssid;
+        $('#wifiDialogState').textContent = `当前连接：${ssid}`;
+        $('#wifiConnect').disabled = false;
+        $('#wifiConnect').textContent = '连接';
+        wifiDialog.close();
+        showToast(`已连接到 ${ssid}`);
+      }, 800);
+    });
+
+    async function loadBackendState() {
+      try {
+        const data = await apiFetch('/api/bootstrap');
+        state.backendOnline = true;
+        state.wifi = data.wifi.current;
+        $('#wifiTopText').textContent = state.wifi;
+        $('#wifiDialogState').textContent = `当前连接：${state.wifi}`;
+        renderTasks(data.tasks);
+        connectStatusSocket();
+      } catch (error) {
+        state.backendOnline = false;
+        showToast('后端未连接，页面以本地演示数据运行');
+      }
+    }
+
+    function connectStatusSocket() {
+      const wsScheme = location.protocol === 'https:' ? 'wss' : 'ws';
+      const socket = new WebSocket(`${wsScheme}://${location.host}/ws/status`);
+      socket.onmessage = event => {
+        const data = JSON.parse(event.data);
+        if (data.tasks) renderTasks(data.tasks);
+        if (data.wifi?.current) {
+          state.wifi = data.wifi.current;
+          $('#wifiTopText').textContent = state.wifi;
+          $('#wifiDialogState').textContent = `当前连接：${state.wifi}`;
+        }
+      };
+      socket.onclose = () => window.setTimeout(connectStatusSocket, 1800);
+    }
+
+    refreshSummary();
+    updateTaskCount();
+    refreshIcons();
+    loadBackendState();
+  </script>
+</body>
+</html>
