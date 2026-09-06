@@ -97,8 +97,14 @@ def main():
 
         node.set_parameters('hr_mock_system', {'navigation_delay_sec': 0.2})
         complete = node.send('complete')
-        if not complete.accepted or node.result(complete).outcome != 'COMPLETED':
-            raise RuntimeError('normal task did not complete')
+        # 把两种失败分开报。合成一条 'normal task did not complete' 时，
+        # 下次再挂还是分不清是 goal 没被接受，还是接受了但结果不对。
+        if not complete.accepted:
+            raise RuntimeError('normal task goal was not accepted')
+        outcome = node.result(complete).outcome
+        if outcome != 'COMPLETED':
+            raise RuntimeError(
+                f"normal task ended as {outcome!r} (result_code={node.state_code('complete')!r})")
 
         node.set_parameters('hr_mock_system', {'navigation_delay_sec': 2.0})
         first = node.send('busy-owner')

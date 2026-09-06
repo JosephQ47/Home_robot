@@ -9,6 +9,7 @@ from hr_interfaces.msg import (FollowPolicy, MotionPhase, PerceptionControl,
 from nav2_msgs.action import NavigateToPose
 from nav_msgs.msg import Odometry
 import rclpy
+from rclpy.executors import ExternalShutdownException
 from rclpy.action import ActionClient, ActionServer, CancelResponse, GoalResponse
 from rclpy.executors import MultiThreadedExecutor
 from rclpy.node import Node
@@ -22,6 +23,9 @@ class TaskManager(Node):
         self.declare_parameter('dependency_timeout_sec', 1.0)
         self.declare_parameter('task_timeout_sec', 30.0)
         self.declare_parameter('mock_navigation_enabled', False)
+        # 导航 action server 的发现等待上限。见 execute() 里的说明：
+        # 不等就直接 send_goal_async，会把「Nav2 还没起来」误报成「目标被拒绝」。
+        self.declare_parameter('nav_server_timeout_sec', 5.0)
         self.declare_parameter('follow_desired_distance_m', 0.0)
         self.declare_parameter('follow_minimum_safe_distance_m', 0.0)
         self.robot_status = None
@@ -134,6 +138,19 @@ class TaskManager(Node):
             self.publish_controls(goal, True, 'NAVIGATING')
             feedback = ExecuteTask.Feedback(); feedback.status = self.publish_state(goal, state)
             handle.publish_feedback(feedback)
+            # 必须先等 action server 被发现再发目标。
+            # 不等的话，启动后立刻下发的第一个任务会拿到 accepted=False，
+            # 被判成 NAV_GOAL_REJECTED —— 但真实原因是 Nav2 还没起来，
+            # 两者的处置完全不同（前者该换目标点，后者该等或查 Nav2）。
+            # 这个竞态在 verify_task_lifecycle.py 上表现为偶发失败
+            # 「normal task did not complete」，真机上表现为开机后第一个任务
+            # 无缘无故失败、重试一次又好了。
+            nav_timeout = float(self.get_parameter('nav_server_timeout_sec').value)
+            if not self.nav.wait_for_server(timeout_sec=nav_timeout):
+                state.transition('FAILED', 'ZERO',
+                                 f'navigation action server not available in {nav_timeout:.1f}s',
+                                 code='NAV_SERVER_UNAVAILABLE')
+                return self.finish(handle, goal, state, False, 'FAILED', handle.abort)
             nav_goal = NavigateToPose.Goal()
             nav_goal.pose = PoseStamped()
             nav_goal.pose.header.stamp = self.get_clock().now().to_msg()
@@ -182,7 +199,7 @@ def main(args=None):
     executor = MultiThreadedExecutor(num_threads=4); executor.add_node(node)
     try:
         executor.spin()
-    except KeyboardInterrupt:
+    except (KeyboardInterrupt, ExternalShutdownException):
         pass
     finally:
         node.destroy_node()

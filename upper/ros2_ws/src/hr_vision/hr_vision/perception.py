@@ -5,6 +5,7 @@ import time
 from pathlib import Path
 
 import rclpy
+from rclpy.executors import ExternalShutdownException
 from cv_bridge import CvBridge
 from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus
 from hr_interfaces.msg import PerceptionControl
@@ -138,7 +139,7 @@ def main(args=None):
     try:
         node = Perception()
         rclpy.spin(node)
-    except KeyboardInterrupt:
+    except (KeyboardInterrupt, ExternalShutdownException):
         pass
     finally:
         signal.signal(signal.SIGINT, signal.SIG_IGN)

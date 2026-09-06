@@ -8,6 +8,7 @@ from hr_interfaces.msg import RobotStatus
 from nav2_msgs.action import FollowWaypoints, NavigateToPose
 from nav_msgs.msg import Odometry
 import rclpy
+from rclpy.executors import ExternalShutdownException
 from rclpy.action import ActionServer, CancelResponse, GoalResponse
 from rclpy.executors import MultiThreadedExecutor
 from rclpy.node import Node
@@ -143,7 +144,7 @@ def main(args=None):
     executor.add_node(node)
     try:
         executor.spin()
-    except KeyboardInterrupt:
+    except (KeyboardInterrupt, ExternalShutdownException):
         pass
     finally:
         node.destroy_node()

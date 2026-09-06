@@ -10,6 +10,7 @@ from geometry_msgs.msg import Twist
 from hr_interfaces.msg import RobotStatus
 from nav_msgs.msg import Odometry
 import rclpy
+from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
 from rclpy.qos import QoSProfile, ReliabilityPolicy
 from sensor_msgs.msg import Imu
@@ -228,7 +229,7 @@ def main(args=None) -> None:
     try:
         node = Stm32Bridge()
         rclpy.spin(node)
-    except KeyboardInterrupt:
+    except (KeyboardInterrupt, ExternalShutdownException):
         pass
     except (RuntimeError, OSError) as exc:
         if node:

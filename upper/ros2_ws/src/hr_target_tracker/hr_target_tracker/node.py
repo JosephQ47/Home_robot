@@ -5,6 +5,7 @@ import time
 from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus
 from hr_interfaces.msg import FollowTarget, HmmdDetection, TrackerPolicy
 import rclpy
+from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
 from sensor_msgs.msg import CameraInfo, LaserScan
 from vision_msgs.msg import Detection2DArray
@@ -112,7 +113,7 @@ class TargetTracker(Node):
 def main(args=None):
     rclpy.init(args=args); node = TargetTracker()
     try: rclpy.spin(node)
-    except KeyboardInterrupt: pass
+    except (KeyboardInterrupt, ExternalShutdownException): pass
     finally:
         node.destroy_node()
         if rclpy.ok(): rclpy.shutdown()

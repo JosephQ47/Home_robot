@@ -3,6 +3,7 @@ from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus
 from hr_interfaces.action import ExecuteTask
 from hr_interfaces.msg import FollowTarget, RobotStatus, TaskStatus
 import rclpy
+from rclpy.executors import ExternalShutdownException
 from rclpy.action import ActionClient
 from rclpy.node import Node
 
@@ -29,7 +30,7 @@ class WebRosAdapter(Node):
 def main(args=None):
     rclpy.init(args=args); node = WebRosAdapter()
     try: rclpy.spin(node)
-    except KeyboardInterrupt: pass
+    except (KeyboardInterrupt, ExternalShutdownException): pass
     finally:
         node.destroy_node()
         if rclpy.ok(): rclpy.shutdown()

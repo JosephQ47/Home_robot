@@ -2,6 +2,7 @@
 from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus
 from hr_interfaces.msg import PerceptionControl
 import rclpy
+from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
 from rclpy.qos import qos_profile_sensor_data
 from sensor_msgs.msg import Image
@@ -36,7 +37,7 @@ class PerceptionStub(Node):
 def main(args=None):
     rclpy.init(args=args); node = PerceptionStub()
     try: rclpy.spin(node)
-    except KeyboardInterrupt: pass
+    except (KeyboardInterrupt, ExternalShutdownException): pass
     finally:
         node.destroy_node()
         if rclpy.ok(): rclpy.shutdown()

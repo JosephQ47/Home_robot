@@ -6,6 +6,7 @@ from geometry_msgs.msg import PoseStamped, Twist
 from hr_interfaces.msg import FollowPolicy, FollowTarget, RobotStatus
 from nav_msgs.msg import Odometry
 import rclpy
+from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
 
 from .control import follow_command, goal_command
@@ -103,7 +104,7 @@ class LocalMotion(Node):
 def main(args=None):
     rclpy.init(args=args); node = LocalMotion()
     try: rclpy.spin(node)
-    except KeyboardInterrupt: pass
+    except (KeyboardInterrupt, ExternalShutdownException): pass
     finally:
         node.destroy_node()
         if rclpy.ok(): rclpy.shutdown()
