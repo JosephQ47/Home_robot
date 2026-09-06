@@ -1,0 +1,184 @@
+--- vendor/Robot/ax_robot.h
++++ validation/Robot/ax_robot.h
+@@ -71,6 +71,7 @@
+ #include "ax_gamepad.h"  //无线手柄
+ 
+ #include "ax_akm.h"      //阿克曼机器人处理函数
++#include "ax_failsafe.h" //ROS通信超时停车
+ 
+ 
+ //机器人轮子速度数据结构体
+@@ -232,6 +233,7 @@
+ #define R_VY_LIMIT  1200   //Y轴速度限值 m/s*1000
+ #define R_VW_LIMIT  6280   //W旋转角速度限值 rad/s*1000
+ 
++
+ //灯光模式
+ #define  LEFFECT1    0x01    //单色模式  
+ #define  LEFFECT2    0x02    //呼吸模式  
+--- vendor/Robot/ax_robot.c
++++ validation/Robot/ax_robot.c
+@@ -73,6 +73,7 @@
+ //控制方式选择
+ uint8_t ax_control_mode = CTL_ROS;
+ 
++
+ //阿克曼机器人前轮转向角度
+ int16_t ax_akm_angle = 0;
+ 
+@@ -115,6 +116,9 @@
+ 			else if (ax_control_mode == CTL_RMS)    AX_CTL_RemoteSbus();   //SBUS航模遥控器控制
+ 		}
+ 		
++		//ROS/CAN通信断开后独立归零，禁止保持最后一帧非零速度
++		AX_FAILSAFE_Update20ms(ax_control_mode, &R_Vel.TG_IX, &R_Vel.TG_IY, &R_Vel.TG_IW);
++
+ 		//判断机器人运动是否开启
+ 		if(ax_robot_move_enable != 0)
+ 		{
+--- vendor/Robot/main.c
++++ validation/Robot/main.c
+@@ -105,6 +105,9 @@
+ 	//调试串口初始化
+ 	AX_UART1_Init(230400);
+ 	
++	//ROS通信超时停车初始化（上电默认无新鲜命令）
++	AX_FAILSAFE_Init();
++
+ 	//ROS USB串口初始化
+ 	AX_UART2_Init(230400);
+ 	
+--- vendor/Robot/ax_failsafe.h
++++ validation/Robot/ax_failsafe.h
+@@ -0,0 +1,10 @@
++#ifndef __AX_FAILSAFE_H
++#define __AX_FAILSAFE_H
++#include <stdint.h>
++#define AX_FAILSAFE_CTL_ROS 0x00u
++#define AX_FAILSAFE_TIMEOUT_TICKS 10u
++void AX_FAILSAFE_Init(void);
++void AX_FAILSAFE_OnRosCommand(void);
++void AX_FAILSAFE_Update20ms(uint8_t control_mode, short *vx, short *vy, short *wz);
++uint8_t AX_FAILSAFE_IsRosCommandFresh(void);
++#endif
+--- vendor/Robot/ax_failsafe.c
++++ validation/Robot/ax_failsafe.c
+@@ -0,0 +1,10 @@
++#include "ax_failsafe.h"
++static volatile uint8_t ros_cmd_fresh_ticks = 0u;
++void AX_FAILSAFE_Init(void) { ros_cmd_fresh_ticks = 0u; }
++void AX_FAILSAFE_OnRosCommand(void) { ros_cmd_fresh_ticks = AX_FAILSAFE_TIMEOUT_TICKS; }
++uint8_t AX_FAILSAFE_IsRosCommandFresh(void) { return ros_cmd_fresh_ticks > 0u ? 1u : 0u; }
++void AX_FAILSAFE_Update20ms(uint8_t control_mode, short *vx, short *vy, short *wz) {
++    if (vx == 0 || vy == 0 || wz == 0 || control_mode != AX_FAILSAFE_CTL_ROS) return;
++    if (ros_cmd_fresh_ticks > 0u) ros_cmd_fresh_ticks--;
++    if (ros_cmd_fresh_ticks == 0u) { *vx = 0; *vy = 0; *wz = 0; }
++}
+--- vendor/Driver/ax_uart2.c
++++ validation/Driver/ax_uart2.c
+@@ -141,6 +141,11 @@
+ 			}
+ 			else  //接收数据长度
+ 			{
++				if(Res < 5 || Res > sizeof(uart2_rx_buf))
++				{
++					uart2_rx_con = 0;
++					return;
++				}
+ 				uart2_rx_buf[2] = Res;
+ 				uart2_rx_con = 3;
+ 				uart2_rx_checksum = (0xAA+0x55) + Res;	//计算校验和
+@@ -161,17 +166,16 @@
+ 				
+ 				//数据校验
+ 				if( Res == uart2_rx_checksum )  //校验正确
+-				{	
+-					
+-					//设置为ROS控制模式
+-					ax_control_mode = CTL_ROS;
++				{
+ 					
+ 					//速度控制帧
+-					if(uart2_rx_buf[3] == ID_URX_VEL)
++					if(uart2_rx_buf[3] == ID_URX_VEL && uart2_rx_buf[2] == 11)
+ 					{
++						ax_control_mode = CTL_ROS;
+ 						R_Vel.TG_IX = (int16_t)((uart2_rx_buf[4]<<8) | uart2_rx_buf[5]);
+ 						R_Vel.TG_IY = (int16_t)((uart2_rx_buf[6]<<8) | uart2_rx_buf[7]);
+ 						R_Vel.TG_IW = (int16_t)((uart2_rx_buf[8]<<8) | uart2_rx_buf[9]);
++						AX_FAILSAFE_OnRosCommand();
+ 						
+ 						
+ 						//如果是阿克曼机器人，根据矢量速度计算前轮转向角
+--- vendor/Driver/ax_uart4.c
++++ validation/Driver/ax_uart4.c
+@@ -142,6 +142,11 @@
+ 			}
+ 			else  //接收数据长度
+ 			{
++				if(Res < 5 || Res > sizeof(uart4_rx_buf))
++				{
++					uart4_rx_con = 0;
++					return;
++				}
+ 				uart4_rx_buf[2] = Res;
+ 				uart4_rx_con = 3;
+ 				uart4_rx_checksum = (0xAA+0x55) + Res;	//计算校验和
+@@ -162,16 +167,16 @@
+ 				
+ 				//数据校验
+ 				if( Res == uart4_rx_checksum )  //校验正确
+-				{	
+-										//设置为ROS控制模式
+-					ax_control_mode = CTL_ROS;
++				{
+ 					
+ 					//速度控制帧
+-					if(uart4_rx_buf[3] == ID_URX_VEL)
++					if(uart4_rx_buf[3] == ID_URX_VEL && uart4_rx_buf[2] == 11)
+ 					{
++						ax_control_mode = CTL_ROS;
+ 						R_Vel.TG_IX = (int16_t)((uart4_rx_buf[4]<<8) | uart4_rx_buf[5]);
+ 						R_Vel.TG_IY = (int16_t)((uart4_rx_buf[6]<<8) | uart4_rx_buf[7]);
+ 						R_Vel.TG_IW = (int16_t)((uart4_rx_buf[8]<<8) | uart4_rx_buf[9]);
++						AX_FAILSAFE_OnRosCommand();
+ 						
+ 						
+ 						//如果是阿克曼机器人，根据矢量速度计算前轮转向角
+--- vendor/Driver/ax_can.c
++++ validation/Driver/ax_can.c
+@@ -116,17 +116,16 @@
+ {
+ 
+ 	//接收FIFO0中的数据
+-    CAN_Receive(CAN1,CAN_FIFO0, &RxMessage); 
+-	
+-	//设置为ROS控制模式
+-	ax_control_mode = CTL_ROS;
++    CAN_Receive(CAN1,CAN_FIFO0, &RxMessage);
+ 	
+ 	//消息解析
+ 	if(RxMessage.StdId == ID_CANRX_VEL)  //速度数据
+ 	{
++		ax_control_mode = CTL_ROS;
+ 		R_Vel.TG_IX = (int16_t)((RxMessage.Data[0]<<8) | RxMessage.Data[1]);
+ 		R_Vel.TG_IY = (int16_t)((RxMessage.Data[2]<<8) | RxMessage.Data[3]);
+ 		R_Vel.TG_IW = (int16_t)((RxMessage.Data[4]<<8) | RxMessage.Data[5]);
++		AX_FAILSAFE_OnRosCommand();
+ 		
+ 		//如果是阿克曼机器人，根据矢量速度计算前轮转向角
+ 		#if (ROBOT_TYPE == ROBOT_AKM)
+--- vendor/Project/xproject.uvprojx
++++ validation/Project/xproject.uvprojx
+@@ -409,6 +409,11 @@
+               <FilePath>..\Robot\ax_robot.c</FilePath>
+             </File>
+             <File>
++              <FileName>ax_failsafe.c</FileName>
++              <FileType>1</FileType>
++              <FilePath>..\Robot\ax_failsafe.c</FilePath>
++            </File>
++            <File>
+               <FileName>ax_speed.c</FileName>
+               <FileType>1</FileType>
+               <FilePath>..\Robot\ax_speed.c</FilePath>
