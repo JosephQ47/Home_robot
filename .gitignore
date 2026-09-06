@@ -9,6 +9,10 @@ lower/build-host/
 build/
 install/
 log/
+
+# 例外：hi3516/build/ 不是 colcon 构建目录，是刻意保留的交叉编译产物
+# （sample_uvc、yolov8.om 等），STATUS.md 用 SHA256 引用它们。
+!hi3516/build/
 .pytest_cache/
 *.egg-info/
 
