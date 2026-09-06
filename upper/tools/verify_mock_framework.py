@@ -57,10 +57,17 @@ def main():
         handle = future.result()
         if handle is None or not handle.accepted: raise RuntimeError('framework task rejected')
         result_future = handle.get_result_async()
-        rclpy.spin_until_future_complete(node, result_future, timeout_sec=10.0)
+        # 25 s 而不是 10 s：任务管理器在发导航目标前会先 wait_for_server
+        # （nav_server_timeout_sec 默认 5 s），叠加 mock 的 navigation_delay_sec，
+        # 冷启动时 10 s 会被顶穿，表现为偶发的 'task did not complete'。
+        rclpy.spin_until_future_complete(node, result_future, timeout_sec=25.0)
         result = result_future.result()
-        if result is None or not result.result.success:
-            raise RuntimeError('framework task did not complete')
+        # 分开报：超时和"跑完但失败"的排查方向完全不同。
+        if result is None:
+            raise RuntimeError('framework task result timed out after 25 s')
+        if not result.result.success:
+            raise RuntimeError(
+                f'framework task finished unsuccessfully: outcome={result.result.outcome!r}')
         print('PASS: mock topology, fail-closed tracker, no velocity publishers, task action')
     finally:
         node.destroy_node()

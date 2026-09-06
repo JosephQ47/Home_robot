@@ -121,10 +121,18 @@ def main():
         if publishers != ['collision_monitor']:
             raise RuntimeError(f'final velocity topology is not unique: {publishers}')
 
-        node.publish_goal()
+        # 目标必须持续重发，不能只发一次。
+        # nav2_local_controller_adapter 的 tick() 在任何一次 safe() 为假时都会
+        # 执行 self.goal = None —— 这是**正确的失效安全行为**，安全事件之后不该
+        # 让旧目标自己复活。但它意味着：目标若恰好落在 /odometry/filtered 还没
+        # 新鲜的那一刻（本测试里 RobotStatus 来自 PTY 桥，就绪时刻与 Mock 不同步），
+        # 就会被立刻清掉，而只发一次的测试再也没有第二次机会。
+        # 实测证据：节点日志显示门禁通过但 goal=False，且没有任何 'rejected' 日志
+        # —— 目标既没被拒绝，也不在了，正是被 tick() 清掉的形状。
         nonzero = []
-        deadline = time.monotonic() + 3.0
+        deadline = time.monotonic() + 8.0
         while time.monotonic() < deadline and not nonzero:
+            node.publish_goal()
             os.write(master, state_frame())
             rclpy.spin_once(node, timeout_sec=0.03)
             nonzero.extend(value for value in read_velocity(master, parser) if value != (0, 0, 0))

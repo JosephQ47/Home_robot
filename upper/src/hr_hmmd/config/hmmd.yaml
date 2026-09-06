@@ -5,4 +5,12 @@ hr_hmmd:
     baud: 115200
     configure_report_mode: true
     stale_after_sec: 0.5
-    range_scale_m: 0.0  # Disabled until captured frames confirm the distance unit.
+    # 2026-09-06 三点标定实测（1/2/3 m）：range_raw 66/112/150，
+    # 过原点最小二乘 → 0.018782 m/count，最大残差 24 cm。
+    #
+    # ⚠️ 这个标度不可复现：同日两次标定，1 m 处得到 50 与 66（差约 30 cm），
+    # 3 m 处得到 174.5 与 150。官方也明说本模块「不建议用作精准测距」。
+    # 因此 range_m 只可用作「远 / 近」的粗判据，**不可当作距离量测**；
+    # 跟随策略的 minimum_safe_distance_m 必须留出覆盖该误差的余量，
+    # 不许按 range_m 的字面值贴身跟随。
+    range_scale_m: 0.018782

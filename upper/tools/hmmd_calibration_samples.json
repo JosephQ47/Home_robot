@@ -1,0 +1,23 @@
+{
+  "1.0": {
+    "truth_m": 1.0,
+    "range_raw_median": 66.0,
+    "range_raw_spread": 1.5,
+    "n": 76,
+    "captured_at": "2026-09-06 23:33:07"
+  },
+  "2.0": {
+    "truth_m": 2.0,
+    "range_raw_median": 112.0,
+    "range_raw_spread": 31.5,
+    "n": 76,
+    "captured_at": "2026-09-06 23:30:36"
+  },
+  "3.0": {
+    "truth_m": 3.0,
+    "range_raw_median": 150,
+    "range_raw_spread": 11.0,
+    "n": 75,
+    "captured_at": "2026-09-06 23:30:54"
+  }
+}

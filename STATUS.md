@@ -609,3 +609,76 @@ ROS 节点实测：`/hmmd/detection` **9.5 Hz**，`presence=true`、`range_raw=1
 **性能问题（新）**：实拍链推理 **1143 ms/帧**、图像仅 **3.36 Hz**（请求 8 Hz），
 瓶颈是虚拟机 CPU 解 2560×1440 H.265。此前记录的 162 ms 是离线小图。要工程化
 须把板端码流降档（`use_mode=5` 即 2M30，或更低），不是调 YOLO 参数能解决的。
+
+## 五个验收脚本首次全绿（2026-09-07 凌晨）
+
+此前 `verify_full_control_pty.py` 长期失败于 `goal did not reach the UART byte
+stream`，且已用 `git stash` 确认是既有问题、非当日改动引入。本轮查清根因并修复。
+
+**根因**：`nav2_local_controller_adapter` 的 `tick()` 在 `safe()` 为假时执行
+`self.goal = None`。**这是正确的失效安全行为**——安全事件之后不该让旧目标自己
+复活，节点侧不改。但它意味着：目标若恰好落在 `/odometry/filtered` 尚未新鲜的
+那一刻，会被立刻清掉，而"只发一次目标"的测试再无第二次机会。
+本测试用 `publish_mock_robot_status:=false`，`RobotStatus` 来自 PTY 桥，其就绪
+时刻与 Mock 里程计不同步，于是必现。
+
+**定位过程**（记下来，同类问题可复用）：逐段插桩排除。先确认 `/goal_pose` 有
+订阅者（1）、`/cmd_vel_auto` 收到 166 条但全零 → 断点在局部控制器而非下游；
+再打印 `RobotStatus` 全字段（六项全 true）与 `/odometry/filtered`（9.9 Hz）→
+排除数据源；最后在 `tick()` 里临时插日志，读到决定性的一行：
+`TICKDBG 通过门禁 goal=False` —— 门禁是过的、目标却不在了，且全程没有任何
+`rejected` 日志，正是被 `tick()` 清掉的形状。诊断日志已完全还原。
+
+**修复**：测试改为在等待窗口内持续重发目标（与早前 `verify_motion_chain.py`
+同一处方）。连跑三次全 PASS。
+
+同时修 `verify_mock_framework.py` 的偶发失败：任务结果等待从 10 s 放宽到 25 s。
+任务管理器在发导航目标前会先 `wait_for_server`（`nav_server_timeout_sec` 默认
+5 s），叠加 mock 的 `navigation_delay_sec`，冷启动时 10 s 会被顶穿。同时把
+"结果超时"与"跑完但失败"拆成两条错误信息——两者排查方向完全不同。
+
+**结果**：`colcon build` 14 包通过；`colcon test` 12 项 0 错 0 失败；
+**五个验收脚本连跑两轮共 10 次，全部 PASS**。这是本仓第一次五个脚本同时全绿。
+
+### 一次被撤回的优化（记录，避免有人再走一遍）
+
+曾把 `hr_camera/source.py` 的 RTSP 取流从 `cap.read()` 改成
+`grab()` + 按发布节奏 `retrieve()`，动机是"排空不需要解码"。**该动机是错的**：
+OpenCV 的 FFmpeg 后端里 `grab()` 本身就做解码，`retrieve()` 只做 YUV→BGR 转换，
+省不下解码。同工作点 A/B（45 s、publish_hz=15）：改前 297 张图/0.89 检测每秒、
+改后 209 张图/1.11 检测每秒，互有胜负、都在噪声内。**已撤回**——没有证据支持的
+优化不该留在代码里，何况它还引入了 `next_decode` 状态与重连路径的复杂度。
+
+### 板端码流档位实测：只有 4M30 可用
+
+按"工程化降档"的要求逐档实测，结论是**这块板子只有 `use_mode=0`（4M30）的 RTSP
+是可靠的**，已保持在该档：
+
+| 档位 | 结果 |
+|---|---|
+| `mode.0` 4M30 | ✅ 可用，2560x1440，直连 17~34 fps |
+| `mode.1` 4M15_2ch | ❌ 能起流但板端可用内存掉到 1.9 MB，`Stream timeout` 反复触发、重连风暴，图像率 0.44 Hz |
+| `mode.4` 3M30_608 | ❌ 拉流 Connection refused |
+| `mode.5` 2M30 | ❌ SDP 里没有 `a=fmtp sprop-vps/sps/pps`，FFmpeg 等不到带内参数集，30 s 超时 |
+
+**另记**：该板 RTSP 服务只扛得住单会话且不清理残留（日志 `VOD teardown Failed
+... can't find session`）。反复 DESCRIBE/连接会把它探到卡死，需
+`killall ittb_stream` 后重启。排障时不要连续探测。
+
+**性能诚实结论**：ROS 视觉链在 1~6 Hz 之间随板子与虚拟机状态漂移，多组 A/B 都
+被这个漂移污染，得不出可靠结论。链路每次都判 PASS，瓶颈在 4MP 解码与板端 25 MB
+内存，不在代码。要真正提速需要换更低分辨率的可用码流或更强的上位机。
+
+### 毫米波：标定已落配置，但接线不稳
+
+用户三点标定结果（1/2/3 m → `range_raw` 66/112/150）已写入
+`hr_hmmd/config/hmmd.yaml`：`range_scale_m: 0.018782`，最大残差 24 cm。
+用户明确表示误差可接受。
+
+**但必须记住两点**：① 同日两次标定不可复现（1 m 处得 50 与 66，差约 30 cm），
+标度本身不稳；② 官方明说本模块「不建议用作精准测距」。因此 `range_m` 只可用作
+「远/近」粗判据，**跟随策略的 `minimum_safe_distance_m` 必须留出覆盖该误差的
+余量，不许按 `range_m` 字面值贴身跟随**。已写进 yaml 注释。
+
+标定后雷达再次失联（四路全 0 字节），而同时刻 Hi3516 控制台与下位机均正常，
+判断为雷达侧杜邦线接触不良，需人工重新插接。
