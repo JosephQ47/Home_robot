@@ -8,8 +8,8 @@ ROS 运行时节点名优先采用方案中的名称；硬件替代件和临时�
 | 任务管理器 `hr_task_manager` | `hr_task_manager` | `/hr_task_manager` | `/task/execute`、`/task/status`、任务策略 | 名称一致 |
 | 目标跟踪 `hr_target_tracker` | `hr_target_tracker` | `/hr_target_tracker` | `/detections` → `/follow_target` | 名称一致；HMMD为临时单人关联模式 |
 | 上下位机桥 `hr_bridge` | `hr_bridge` | `/hr_bridge` | `/cmd_vel`、`/wheel/odom_raw`、`/imu/data`、`/robot_status` | 名称一致 |
-| 相机驱动 | `hr_camera` + `hr_vision` | `/hi3516_camera_driver` | `/camera/image_raw` | 当前兼容RTSP，正式目标仍是Hi3516 UVC |
-| 视觉识别 | `hr_perception` / `hr_vision` | `/hr_perception` | `/camera/image_raw` → `/detections` | 对应方案“视觉识别” |
+| 相机驱动 | `hr_camera` | `/hi3516_camera_driver` | `/camera/image_raw` | 当前兼容RTSP，正式目标仍是Hi3516 UVC |
+| 视觉识别 | `hr_perception` | `/hr_perception` | `/camera/image_raw` → `/detections` | 对应方案“视觉识别” |
 | 雷达驱动 | `hr_hmmd` | `/hmmd_radar_driver` | `/hmmd/detection` | 当前HMMD替代件；不等同正式RPLIDAR `/scan` |
 | EKF | `hr_localization` | `/ekf_filter_node` | `/wheel/odom_raw`、`/imu/data` → `/odometry/filtered` | 使用标准 `robot_localization` 名称 |
 | SLAM | `hr_localization` | `/slam_toolbox` | `/scan`、TF → `/map` | 正式方案入口，当前硬件阻塞 |
@@ -34,5 +34,5 @@ ROS 运行时节点名优先采用方案中的名称；硬件替代件和临时�
           → collision_monitor/测试接收端（不连接真实底盘）
 ```
 
-`nav2_local_controller_adapter` 在 `robot.launch.py` 中默认关闭。完成地图、传感器和
+`nav2_local_controller_adapter` 在 `robot_bringup.launch.py` 中默认关闭。完成地图、传感器和
 Nav2验收后停用该适配器，由正式 Nav2 节点组接管相同的 `/cmd_vel_auto` 接口。

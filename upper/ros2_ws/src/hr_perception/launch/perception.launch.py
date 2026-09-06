@@ -12,7 +12,7 @@ def generate_launch_description():
         DeclareLaunchArgument('model', default_value=''),
         Node(package='hr_perception', executable='perception_stub', output='screen',
              condition=UnlessCondition(PythonExpression(["'", backend, "' == 'cpu_yolo'"]))),
-        Node(package='hr_vision', executable='perception', name='hr_perception', output='screen',
+        Node(package='hr_perception', executable='perception', name='hr_perception', output='screen',
              parameters=[{'model': LaunchConfiguration('model'), 'require_control': True}],
              condition=IfCondition(PythonExpression(["'", backend, "' == 'cpu_yolo'"]))),
     ])

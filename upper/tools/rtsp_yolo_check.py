@@ -73,10 +73,13 @@ def main():
     handles = []
     processes = []
 
-    def start(module, parameters):
-        handle = open(logs / f'{module}.log', 'w+', encoding='utf-8')
+    def start(label, module, parameters):
+        # label 只作日志文件名，module 是完整导入路径。
+        # 二者分开是因为实现已按技术方案 §9.2 归位：图像源在 hr_camera、
+        # 识别在 hr_perception，导入路径不再等于节点标签。
+        handle = open(logs / f'{label}.log', 'w+', encoding='utf-8')
         handles.append(handle)
-        command = [sys.executable, '-c', f'from hr_vision.{module} import main; main()', '--ros-args']
+        command = [sys.executable, '-c', f'from {module} import main; main()', '--ros-args']
         for key, value in parameters.items():
             command += ['-p', f'{key}:={value}']
         proc = subprocess.Popen(command, stdout=handle, stderr=subprocess.STDOUT)
@@ -113,8 +116,8 @@ def main():
     started = time.monotonic()
     velocity_topics_present = []
     try:
-        start('perception', perception_params)
-        start('source', source_params)
+        start('perception', 'hr_perception.perception', perception_params)
+        start('source', 'hr_camera.source', source_params)
         end = started + args.duration
         while time.monotonic() < end:
             rclpy.spin_once(node, timeout_sec=0.1)

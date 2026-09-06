@@ -15,7 +15,7 @@
 ```bash
 source Home_robot/upper/vision_env.sh
 cd Home_robot/upper/ros2_ws
-python -m colcon build --packages-select hr_vision --symlink-install
+python -m colcon build --packages-select hr_camera hr_perception --symlink-install
 source install/local_setup.bash
 ```
 
@@ -24,7 +24,7 @@ source install/local_setup.bash
 ```bash
 source Home_robot/upper/vision_env.sh
 export ROS_DOMAIN_ID=61 ROS_LOCALHOST_ONLY=1
-ros2 launch hr_vision vision.launch.py \
+ros2 launch hr_camera camera.launch.py \
   source:=/home/luckfox/Hi3516/vision-assets/bus.jpg \
   model:=/home/luckfox/Hi3516/vision-assets/yolov8n.pt
 ```
@@ -38,7 +38,7 @@ source Home_robot/upper/vision_env.sh
 cd Home_robot/upper/ros2_ws
 source install/local_setup.bash
 export ROS_DOMAIN_ID=61 ROS_LOCALHOST_ONLY=1
-ros2 launch hr_vision vision.launch.py \
+ros2 launch hr_camera camera.launch.py \
   source:=/dev/video0 \
   capture_width:=640 capture_height:=480 capture_fps:=30 \
   pixel_format:=YUYV \
@@ -83,7 +83,7 @@ ros2 topic echo /diagnostics --once
 
 | 检查 | 结果 |
 |---|---|
-| `colcon build --packages-select hr_vision --symlink-install` | 通过；新包被识别为 ROS ament_python 包 |
+| `colcon build --packages-select hr_camera hr_perception --symlink-install` | 通过 |
 | 单元测试 | 4 项通过：最新帧覆盖、新鲜度、框坐标/标签、空与非法检测 |
 | 真实 YOLO + ROS 联调 | 通过；最终一次观察到 28 条图像、7 条检测消息，检测到 person |
 | 停止源、注入过期图像、恢复源 | 检测失效、拒绝旧帧、恢复检测均通过 |
@@ -99,9 +99,9 @@ ros2 topic echo /diagnostics --once
 
 ```bash
 source Home_robot/upper/vision_env.sh
-python -m pytest Home_robot/upper/ros2_ws/src/hr_vision/test/test_common.py -q
+python -m pytest Home_robot/upper/ros2_ws/src/hr_perception/test/test_common.py -q
 ROS_DOMAIN_ID=61 ROS_LOCALHOST_ONLY=1 python \
-  Home_robot/upper/ros2_ws/src/hr_vision/test/verify_pipeline.py \
+  Home_robot/upper/ros2_ws/src/hr_perception/test/verify_pipeline.py \
   --model /home/luckfox/Hi3516/vision-assets/yolov8n.pt \
   --image /home/luckfox/Hi3516/vision-assets/bus.jpg
 ```
@@ -220,8 +220,8 @@ cd /home/luckfox/d2lros2
 source Home_robot/upper/vision_env.sh
 cd Home_robot/upper/ros2_ws
 python -m colcon build --symlink-install
-python -m pytest src/hr_vision/test/test_common.py -q
-python src/hr_vision/test/verify_pipeline.py   --model /home/luckfox/Hi3516/vision-assets/yolov8n.pt   --image /home/luckfox/Hi3516/vision-assets/bus.jpg
+python -m pytest src/hr_perception/test/test_common.py -q
+python src/hr_perception/test/verify_pipeline.py   --model /home/luckfox/Hi3516/vision-assets/yolov8n.pt   --image /home/luckfox/Hi3516/vision-assets/bus.jpg
 ```
 
 结果：`hr_bridge`、`hr_vision` 全量构建通过；`hr_vision` 单测 4 项通过；YOLO/ROS 离线集成测试通过，收到 30 条图像、4 条检测消息，检测到 `person`，并验证源停止后检测失效、旧帧不会重新激活检测，且没有 `/cmd_vel` 或 `/cmd_vel_auto`。

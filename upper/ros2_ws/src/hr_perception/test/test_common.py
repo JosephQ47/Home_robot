@@ -1,6 +1,6 @@
 from std_msgs.msg import Header
 
-from hr_vision.common import Latest, detections_message, fresh
+from hr_perception.common import Latest, detections_message, fresh
 
 
 def test_latest_replaces_backlog():

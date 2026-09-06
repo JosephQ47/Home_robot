@@ -8,7 +8,8 @@
 |---|---|
 | `hr_interfaces` | 自定义消息和 `/task/execute` Action 的唯一来源 |
 | `hr_description` | 机器人描述骨架；实测外参完成前只包含 `base_link` |
-| `hr_camera` / `hr_vision` | synthetic、RTSP、V4L2 图像输入和现有 CPU YOLO |
+| `hr_camera` | synthetic、RTSP、V4L2 图像输入（UVC 未打通前的临时取流） |
+| `hr_perception` | CPU YOLO 识别与事件门控 |
 | `hr_perception` | 感知后端选择和任务启停门控 |
 | `hr_hmmd` | 微雪 HMMD UART 存在/粗距离帧；不发布 `/scan` |
 | `hr_target_tracker` | 正式相机/平面扫描骨架与临时单人视觉/HMMD关联；默认关闭 |
@@ -57,12 +58,12 @@ python ../tools/verify_bridge_pty.py
 - `vision_rtsp.launch.py source:=rtsp://... backend:=cpu_yolo model:=/abs/model.pt`：已验证 RTSP/CPU YOLO 路径。
 - `mapping.launch.py`：真实建图入口，当前会因二维扫描硬件和部分依赖缺失而保持不可用。
 - `navigation.launch.py`：真实导航入口，必须在地图、TF、二维扫描、Collision Monitor 和制动参数冻结后使用。
-- `robot.launch.py`：实机组合入口；STM32、HMMD 和命令输出默认关闭。
+- `robot_bringup.launch.py`：实机组合入口；STM32、HMMD 和命令输出默认关闭。
 
 无地图短程模式接收 RViz `/goal_pose`，只接受 `odom` 坐标系且默认上限 0.5 m、
 5 s、0.10 m/s。`hr_local_motion` 仅向 `/cmd_vel_auto` 发布，并要求订阅端节点名为
 `collision_monitor`；STM32 安全许可、轮式里程计、看门狗或数据新鲜度失效时持续
-输出零速度。该节点只有在 `robot.launch.py local_motion_enabled:=true` 时才会出现，
+输出零速度。该节点只有在 `robot_bringup.launch.py local_motion_enabled:=true` 时才会出现，
 当前不要在实车上启用。
 
 启用 HMMD 串口前，先确认设备路径、电平、供电和距离字段单位。即使 HMMD 正常工作，也不能把 `/hmmd/detection` 重映射为 `/scan`。

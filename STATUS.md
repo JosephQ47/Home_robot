@@ -467,3 +467,52 @@ USB 设备重新接入虚拟机后复检，**下位机与 HMMD 都收不到任�
 
 结论：问题在 HMMD 模块侧的供电或接线。待人工确认：模块接在 CH344 哪一路、
 VCC 上是否有 3.3 V、模块 TX 是否接到转接板 RX（必须交叉）。
+
+## 按技术方案归位包结构（2026-09-06 晚）
+
+用户要求：节点与 RTOS 任务命名尽量与技术方案一致，架构不随意变化；不一样的地方
+遵从方案。据此做了一次对齐。
+
+**核对结果**：下位机四任务 `monitor_task` / `chassis_task` / `imu_task` /
+`command_task` 与方案 §4.1 完全一致，无偏差。方案 §9.2 列出的 10 个 `hr_*` 包
+全部存在，无缺失。
+
+**已改正的偏差**：
+
+1. **删除方案外的 `hr_vision` 包**。此前 `hr_camera` 与 `hr_perception` 只有
+   launch，真正的实现都在方案里没有的 `hr_vision` 里，等于方案指定的包被架空。
+   现按方案 §3.2 / §3.4 归位：图像源实现移入 `hr_camera`（方案：相机接入，
+   不承担识别），YOLO 识别移入 `hr_perception`（方案：二维识别与事件门控）。
+   `hr_camera` 随之由 `ament_cmake` 改为 `ament_python` 以承载节点。
+   节点名 `/hi3516_camera_driver` 与 `/hr_perception` 本就与方案一致，未改动。
+2. **`robot.launch.py` → `robot_bringup.launch.py`**，与方案 §9.2 一致。
+3. 原 `hr_vision/common.py` 拆成两份，分别放进 `hr_camera` 与 `hr_perception`。
+   方案 §9.2 没有共享工具包，且本仓既有惯例就是小工具各包自持——`fresh` 在
+   `hr_local_motion`、`hr_task_manager`、`hr_target_tracker` 各有一份。故不新建
+   方案外的工具包。`detections_message` 只给识别侧，不进 `hr_camera`。
+4. `hr_perception/setup.py` 补 `tests_require`，否则移过来的 4 项测试不会注册
+   （改正前 `colcon test` 从 12 项掉到 8 项）。
+
+**经用户确认保留的临时替身**（都占据方案已定义的接口位置，不新增第二条通路）：
+
+| 替身 | 顶替方案中的 | 原因 |
+|---|---|---|
+| `hr_hmmd` 毫米波 | RPLIDAR A1 | 无激光雷达，临时替代调试 |
+| `hr_camera` 走 RTSP | Hi3516 USB UVC | UVC 未打通（板端 Type-C 为 Host，UDC 为空）|
+| `hr_local_motion` | Nav2 出 `/cmd_vel_auto` | 无 `/scan`，Nav2 跑不起来 |
+| `hr_simulation` | 无 | 纯 Mock 测试替身 |
+
+`hr_local_motion` 需注意：方案 §2.2 / §3.5 第 6 条 / §7 三处明写「首版不设置独立
+`hr_motion_mux` 或跟随速度控制器」。它现在发布 `/cmd_vel_auto`，占的正是 Nav2 的
+接口位，`/cmd_vel` 仍是唯一发布者（`verify_motion_chain.py` 每次都校验），没有
+造出第二条速度通路。**但它是临时替身，雷达到位后应删除、由 Nav2 顶上。**
+
+**验证**：`colcon build` 14 包通过（少了 `hr_vision`）；`colcon test` 12 项
+0 错 0 失败；`verify_mock_framework` / `verify_motion_chain` /
+`verify_task_lifecycle` / `verify_bridge_pty` 四个验收脚本全 PASS；
+`rtsp_yolo_check.py` 走新包路径离线跑 `bus.jpg` 判定 PASS——34 张图、9 条检测、
+无速度话题。
+
+**未做**：方案 §9.2 写的工作空间根目录是 `upper/src/`，实际是
+`upper/ros2_ws/src/`。这是纯结构性改名，会牵动 `vision_env.sh`、全部工具脚本、
+launch 与文档里的路径，且对当前「快速调通」没有帮助，故单列出来待裁决，未擅自改。

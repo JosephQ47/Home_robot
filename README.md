@@ -9,7 +9,7 @@ ROS 2 全框架说明见 [上位机框架](upper/README-framework.md)，节点�
 用于快速验证技术方案的 STM32 下位机框架位于 [lower/](lower/README.md)，OpenCTR 厂商源码审查见
 [OpenCTR V3.61 下位机源码审查](docs/OpenCTR_V3.61源码审查.md)。
 
-PC/Ubuntu 视觉调试已新增于 `upper/ros2_ws/src/hr_vision`：支持 RTSP/文件图像输入与 CPU YOLO 检测，输出标准 ROS 2 图像、检测和诊断话题。启动、测试及其他节点准备状态见 [视觉调试说明](upper/README-vision.md)。该入口不启动底盘串口控制，正式 RK3588 技术方案保持不变。
+PC/Ubuntu 视觉调试按技术方案 §9.2 归位：图像源在 `hr_camera`（当前 UVC 未打通，临时以 RTSP/文件取流），识别在 `hr_perception`（CPU YOLO），输出标准 ROS 2 图像、检测和诊断话题。启动、测试及其他节点准备状态见 [视觉调试说明](upper/README-vision.md)。该入口不启动底盘串口控制，正式 RK3588 技术方案保持不变。
 
 海思资料核验与待交叉编译的最小程序见 [Hi3516 应用开发准备](hi3516/README.md)。资料归档和工具链仍放在 `/home/luckfox/Hi3516`，不混入 ROS 源码目录。
 

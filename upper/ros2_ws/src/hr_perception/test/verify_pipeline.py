@@ -40,7 +40,7 @@ def main():
     def start(module, parameters):
         output = open(Path(logs.name) / f'{module}-{len(processes)}.log', 'w+')
         handles.append(output)
-        command = [sys.executable, '-c', f'from hr_vision.{module} import main; main()', '--ros-args']
+        command = [sys.executable, '-c', f'from hr_perception.{module} import main; main()', '--ros-args']
         for key, value in parameters.items():
             command += ['-p', f'{key}:={value}']
         proc = subprocess.Popen(command, stdout=output, stderr=subprocess.STDOUT)
