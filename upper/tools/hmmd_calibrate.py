@@ -54,27 +54,35 @@ def open_port(port, baud, configure):
     return s
 
 
-def collect(port, baud, seconds, configure=True):
-    """返回 (detections, 原始字节数)。"""
+def collect(port, baud, seconds, configure=True, want_sample=False):
+    """返回 (detections, 原始字节数, 坏帧数[, 原始字节样本])。"""
     s = open_port(port, baud, configure)
     parser = Parser()
     dets = []
     total = 0
+    sample_buf = bytearray()
+    sample = b''
     try:
         end = time.monotonic() + seconds
         while time.monotonic() < end:
             chunk = s.read(4096)
             if chunk:
                 total += len(chunk)
+                if len(sample_buf) < 256:
+                    sample_buf.extend(chunk[:256 - len(sample_buf)])
                 dets.extend(parser.feed(chunk))
+        sample = bytes(sample_buf)
     finally:
         s.close()
+    if want_sample:
+        return dets, total, parser.bad_frames, sample
     return dets, total, parser.bad_frames
 
 
 def cmd_probe(args):
     print(f'读取 {args.port} @ {args.baud}，{args.seconds} 秒 …')
-    dets, total, bad = collect(args.port, args.baud, args.seconds, not args.no_configure)
+    dets, total, bad, raw_sample = collect(args.port, args.baud, args.seconds,
+                                          not args.no_configure, want_sample=True)
     print(f'原始字节 {total}｜解析帧 {len(dets)}｜坏帧 {bad}')
     if total == 0:
         print('\n收到 0 字节。按可能性从高到低排查：')
@@ -85,7 +93,13 @@ def cmd_probe(args):
         print('  4. 电平不对 —— 必须 3.3 V TTL；5 V 或 RS-232 会烧模块。')
         return 1
     if not dets:
-        print('\n有字节但解析不出帧：波特率可能不对，或模块不在上报模式。')
+        print('\n有字节但解析不出帧。')
+        if b'Range' in raw_sample or b'ON' in raw_sample:
+            print('数据是 ASCII 文本（`ON` / `Range <N>`）—— 模块上电默认就是这个')
+            print('模式，不是二进制上报帧。需要先发 REPORT_MODE_COMMAND 切换；')
+            print('本脚本默认会发，除非加了 --no-configure。该模式不掉电保存。')
+        else:
+            print('波特率可能不对，或模块不在上报模式。')
         return 1
     ranges = [d.range_raw for d in dets]
     presence = sum(d.presence for d in dets)

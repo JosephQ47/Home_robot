@@ -18,6 +18,27 @@ udevadm info -q property -n /dev/ttyUSB0
 按实际枚举结果替换下面的设备路径。CH344 四路串口是现有开发板调试设备，不能
 仅凭 `/dev/ttyACM*` 名称认定它是 HMMD。
 
+## 上电默认是 ASCII 模式，不是上报模式
+
+2026-09-06 实测：模块**上电后默认输出 ASCII 文本**，不是二进制上报帧。形态是
+`ON` 与 `Range <N>` 交替的行，约 13.7 Hz：
+
+```
+ON
+Range 117
+ON
+Range 117
+```
+
+`protocol.py` 的 `Parser` 只认二进制帧（帧头 `F4 F3 F2 F1`），对着 ASCII 流会
+解析出 0 帧。所以 `configure_report_mode: true`（默认值）**不是可选项**：节点
+启动时发的那条 `REPORT_MODE_COMMAND` 才把模块切到二进制。实测切换后立刻拿到
+9.6 Hz、0 坏帧的二进制帧。
+
+**该模式不掉电保存。** 模块每次上电都回到 ASCII，靠节点启动时重新下发命令。
+若排障时看到 `Range 117` 这种可读文本，说明命令没发出去或没被接受，不是波特率
+问题。
+
 ## 安全实测
 
 ```bash
