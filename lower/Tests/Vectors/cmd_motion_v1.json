@@ -1,0 +1,10 @@
+{
+  "name": "cmd_motion_forward_turn_v1",
+  "sequence": 7,
+  "timestamp_ms": 1000,
+  "vx_mm_s": 100,
+  "wz_mrad_s": -200,
+  "enable": true,
+  "frame_hex": "a5 5a 01 01 0a 00 07 00 e8 03 00 00 64 00 00 00 38 ff ff ff 01 00 d5 98",
+  "crc16": "0x98D5"
+}

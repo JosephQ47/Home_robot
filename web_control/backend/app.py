@@ -73,6 +73,8 @@ class Task:
 class TaskAdapter:
     """Boundary for the future ROS 2 ExecuteTask Action Client."""
 
+    is_mock = False
+
     def submit(self, task: Task) -> Task:
         raise NotImplementedError
 
@@ -82,6 +84,8 @@ class TaskAdapter:
 
 class MockTaskAdapter(TaskAdapter):
     """Local simulator used before ROS 2 is available."""
+
+    is_mock = True
 
     def submit(self, task: Task) -> Task:
         task.status = "RUNNING"
@@ -127,7 +131,7 @@ class RobotState:
                 phase="PRECHECK",
                 message="等待任务准入检查",
             ),
-        ]
+        ] if adapter.is_mock else []
         self._wifi = "Home_5G"
         self._started_at = time.time()
 
@@ -153,6 +157,9 @@ class RobotState:
             }
 
     def system_status(self) -> dict[str, Any]:
+        live_status = getattr(self._adapter, "system_status", None)
+        if live_status:
+            return live_status()
         active = next((task for task in self._tasks if task.status == "RUNNING"), None)
         return {
             "robot_online": True,
@@ -189,7 +196,10 @@ class RobotState:
                     f"当前已有活动任务 {active.task_id}，网页任务不在后台堆积等待",
                 )
 
-            submitted = self._adapter.submit(task)
+            try:
+                submitted = self._adapter.submit(task)
+            except RuntimeError as exc:
+                raise ApiError(HTTPStatus.SERVICE_UNAVAILABLE, "ROS_TASK_UNAVAILABLE", str(exc)) from exc
             self._tasks.insert(0, submitted)
             return self._task_view(submitted)
 
@@ -198,7 +208,10 @@ class RobotState:
             task = self._find_task(task_id)
             if task.status in {"CANCELLED", "DONE", "FAILED", "REJECTED"}:
                 return self._task_view(task)
-            return self._task_view(self._adapter.cancel(task, reason))
+            try:
+                return self._task_view(self._adapter.cancel(task, reason))
+            except RuntimeError as exc:
+                raise ApiError(HTTPStatus.SERVICE_UNAVAILABLE, "ROS_CANCEL_FAILED", str(exc)) from exc
 
     def delete_task(self, task_id: str) -> dict[str, str]:
         with self._lock:
@@ -417,25 +430,37 @@ class HomeRobotServer(ThreadingHTTPServer):
         self.running = True
 
 
-def run(host: str, port: int) -> None:
-    server = HomeRobotServer((host, port), RobotState(MockTaskAdapter()))
+def run(host: str, port: int, adapter_mode: str = "mock") -> None:
+    if adapter_mode == "ros":
+        from hr_web_ui.web_task_adapter import RosTaskAdapter
+        adapter = RosTaskAdapter()
+    else:
+        adapter = MockTaskAdapter()
+    server = HomeRobotServer((host, port), RobotState(adapter))
 
     def stop(_signum: int, _frame: Any) -> None:
         server.running = False
-        server.shutdown()
+        # shutdown() must not run in the serve_forever thread.
+        threading.Thread(target=server.shutdown, daemon=True).start()
 
     signal.signal(signal.SIGINT, stop)
     signal.signal(signal.SIGTERM, stop)
     print(f"HomeRobot web backend listening on http://{host}:{port}")
-    server.serve_forever()
+    try:
+        server.serve_forever()
+    finally:
+        close = getattr(adapter, "close", None)
+        if close:
+            close()
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="HomeRobot web UI backend")
     parser.add_argument("--host", default="0.0.0.0")
     parser.add_argument("--port", type=int, default=8080)
+    parser.add_argument("--adapter", choices=("mock", "ros"), default="mock")
     args = parser.parse_args()
-    run(args.host, args.port)
+    run(args.host, args.port, args.adapter)
 
 
 if __name__ == "__main__":

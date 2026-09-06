@@ -1,0 +1,7 @@
+# OpenCTR lower controller Type-C USB serial.
+SUBSYSTEM=="tty", ATTRS{idVendor}=="1a86", ATTRS{idProduct}=="55d4", ATTRS{serial}=="5B34018995", SYMLINK+="robot_mcu", GROUP="plugdev", MODE="0660", TAG+="uaccess"
+
+# CH344 quad serial: interface 04 is physical COMC/HMMD; 06 is COMD/Hi3516 debug.
+# A/B remain deliberately unnamed because their connected functions are not frozen.
+SUBSYSTEM=="tty", ATTRS{idVendor}=="1a86", ATTRS{idProduct}=="55d5", ENV{ID_USB_INTERFACE_NUM}=="04", SYMLINK+="hmmd_sensor", GROUP="plugdev", MODE="0660", TAG+="uaccess"
+SUBSYSTEM=="tty", ATTRS{idVendor}=="1a86", ATTRS{idProduct}=="55d5", ENV{ID_USB_INTERFACE_NUM}=="06", SYMLINK+="hi3516_debug", GROUP="plugdev", MODE="0660", TAG+="uaccess"
