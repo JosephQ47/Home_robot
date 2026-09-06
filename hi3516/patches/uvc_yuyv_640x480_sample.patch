@@ -1,0 +1,74 @@
+diff --git a/uvc.h.orig_before_yuyv640x480 b/uvc.h
+index f431c3f..76e5bea 100644
+--- a/uvc.h.orig_before_yuyv640x480
++++ b/uvc.h
+@@ -512,6 +512,8 @@ struct ot_uvc_format_info {
+ };
+ 
+ static const struct ot_uvc_frame_info ot_uvc_frames_yuyv[] = {
++    /* YUY2/YUYV 640x480@30: payload=640*480*2, xfersize ~= 3072 bytes/125us. */
++    {  640,  480, {333333,       0 }, 9216, 3072},
+     {  640,  360, {333333,       0 }, 2304, 1984},
+     { 1280,  720, {333333,       0 }, 9216, 2688},
+     { 1920, 1080, {333333,       0 }, 20736, 3072},
+diff --git a/uvc_media.c.orig_before_yuyv640x480 b/uvc_media.c
+index 044db0c..0941d58 100644
+--- a/uvc_media.c.orig_before_yuyv640x480
++++ b/uvc_media.c
+@@ -168,7 +168,7 @@ static void sample_uvc_config_vb(sample_sns_type sns_type, ot_vb_cfg *vb_cfg)
+ 
+         buf_attr.pixel_format  = OT_PIXEL_FORMAT_YVU_SEMIPLANAR_422;
+         buf_attr.width = 640; /* 640 width */
+-        buf_attr.height = 360; /* 360 height */
++        buf_attr.height = 480; /* 480 height for YUYV 640x480 */
+         vb_cfg->common_pool[0x2].blk_size = ot_common_get_pic_buf_size(&buf_attr);
+         vb_cfg->common_pool[0x2].blk_cnt = 2; /* 2: blk cnt */
+         vb_cfg->common_pool[0x2].remap_mode = OT_VB_REMAP_MODE_CACHED;
+diff --git a/uvc_media_v4l2.c.orig_before_yuyv640x480 b/uvc_media_v4l2.c
+index d2de1e0..d668667 100644
+--- a/uvc_media_v4l2.c.orig_before_yuyv640x480
++++ b/uvc_media_v4l2.c
+@@ -93,7 +93,7 @@ static void sample_uvc_config_vb(sample_sns_type sns_type, ot_vb_cfg *vb_cfg)
+ 
+         buf_attr.pixel_format  = OT_PIXEL_FORMAT_YVU_SEMIPLANAR_422;
+         buf_attr.width = 640; /* 640 width */
+-        buf_attr.height = 360; /* 360 height */
++        buf_attr.height = 480; /* 480 height for YUYV 640x480 */
+         vb_cfg->common_pool[0x2].blk_size = ot_common_get_pic_buf_size(&buf_attr);
+         vb_cfg->common_pool[0x2].blk_cnt = 2; /* 2: blk cnt */
+         vb_cfg->common_pool[0x2].remap_mode = OT_VB_REMAP_MODE_CACHED;
+diff --git a/camera.c.orig_before_yuyv640x480 b/camera.c
+index f557c46..0a85f53 100644
+--- a/camera.c.orig_before_yuyv640x480
++++ b/camera.c
+@@ -18,7 +18,7 @@
+ #include "camera.h"
+ /* -------------------------------------------------------------------------- */
+ 
+-td_bool g_uac = TD_TRUE;
++td_bool g_uac = TD_FALSE; /* video-only UVC test profile */
+ static pthread_t g_st_uvc_pid[OT_UVC_MAX_CHN_NUM];
+ static pthread_t g_st_uac_pid;
+ static uint32_t g_uvc_dev_cnt = 1;
+@@ -120,7 +120,9 @@ static int camera_run(void)
+     for (td_u32 i = 0; i < g_uvc_dev_cnt; i++) {
+         pthread_create(&g_st_uvc_pid[i], 0, uvc_thread, (void*)(td_uintptr_t)i);
+     }
+-    pthread_create(&g_st_uac_pid, 0, uac_thread, NULL);
++    if (g_uac) {
++        pthread_create(&g_st_uac_pid, 0, uac_thread, NULL);
++    }
+ 
+ #ifndef OT_UVC_COMPILE
+     while (TD_TRUE) {
+@@ -134,7 +136,9 @@ static int camera_run(void)
+     for (td_u32 i = 0; i < g_uvc_dev_cnt; i++) {
+         pthread_join(g_st_uvc_pid[i], NULL);
+     }
+-    pthread_join(g_st_uac_pid, NULL);
++    if (g_uac) {
++        pthread_join(g_st_uac_pid, NULL);
++    }
+     return 0;
+ }
+ 
