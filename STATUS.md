@@ -432,3 +432,38 @@ USB 设备重新接入虚拟机后复检，**下位机与 HMMD 都收不到任�
 实测连跑两次，一次 `RuntimeError: bounded odom goal produced no final velocity`、
 一次 PASS。改为先等 `get_subscription_count() > 0` 再持续重发，连跑三次全 PASS。
 验收脚本时好时坏比直接失败更糟——它会让人去怀疑被测代码，而坏的是判据本身。
+
+### 上电后复测（同日稍晚）
+
+用户确认底盘上电后复测，**下位机链路全部正常**：
+
+- `/dev/ttyACM0` @230400 只读 5 秒收到 6953 字节，帧头 `aa 55 19 10`（25 字节
+  状态帧），与旧 X-Protocol 一致。
+- `hr_bridge` 以 `transport_enabled=true`、`command_output_enabled=false` 接入：
+  `/wheel/odom_raw` **50.03 Hz**；`/robot_status` 的 `stm32_link_ok=true`、
+  `wheel_odom_valid=true`、电池 **11.38 V**；`safety_permit`、`watchdog_healthy`、
+  `imu_valid` 均为 false（旧协议不上报安全状态，IMU 量纲未标定，符合预期）。
+- `/cmd_vel` **发布者 0 个**、订阅者 1 个（hr_bridge），全程未向下位机发送任何
+  数据，底盘未动。
+
+两处此前记录需要更正：
+
+1. 用数 `AA 55` 字节对的方式估算帧率会偏高（曾得到 55.6 Hz），因为载荷内也会
+   偶然出现该字节对。**以 `ros2 topic hz` 的 50.03 Hz 为准。**
+2. 一次测试中 `/robot_status` 显示「未发布」，是测试进程的存活时间短于探测窗口
+   所致，不是缺陷。实测该话题以约 **50.8 Hz** 发布——`publish_state()` 每收到
+   一帧都会调 `publish_link_status()`，`create_timer(1.0, ...)` 只是断链后的兜底
+   心跳。设计正确。
+
+**HMMD 毫米波仍然完全无数据。** 已排除的可能：
+
+- 不是 USB 直通问题：同一条 USB 路径上的下位机工作正常。
+- 不是权限问题：三个口均可读写，用户在 `dialout` 组。
+- 不是波特率问题：CH344 四路 × {9600, 115200, 230400, 256000, 921600} 全部
+  被动扫描，**无一路有任何字节**。
+- 不是「未进入上报模式」：向 A/B/C 三路分别发送官方上报模式命令
+  `fd fc fb fa 08 00 12 00 00 00 04 00 00 00 04 03 02 01` 后各等 4 秒，仍为 0 字节。
+  （**未向 D 路发送任何数据**——那是 Hi3516 的 root 控制台，写入会向 shell 灌字符。）
+
+结论：问题在 HMMD 模块侧的供电或接线。待人工确认：模块接在 CH344 哪一路、
+VCC 上是否有 3.3 V、模块 TX 是否接到转接板 RX（必须交叉）。
