@@ -27,7 +27,7 @@
 ```bash
 cd /home/luckfox/d2lros2
 source Home_robot/upper/vision_env.sh
-cd Home_robot/upper/ros2_ws
+cd Home_robot/upper/src
 python -m colcon build --symlink-install
 source install/local_setup.bash
 export ROS_DOMAIN_ID=61 ROS_LOCALHOST_ONLY=1
@@ -41,7 +41,7 @@ Mock 模式中的 `/scan`、TF、里程计、IMU 和 Nav2 Action 都是测试数
 ```bash
 cd /home/luckfox/d2lros2
 source Home_robot/upper/vision_env.sh
-cd Home_robot/upper/ros2_ws
+cd Home_robot/upper/src
 python ../tools/verify_motion_chain.py
 python ../tools/verify_task_lifecycle.py
 python ../tools/verify_bridge_pty.py

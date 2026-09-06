@@ -147,9 +147,12 @@ class TaskManager(Node):
             # 无缘无故失败、重试一次又好了。
             nav_timeout = float(self.get_parameter('nav_server_timeout_sec').value)
             if not self.nav.wait_for_server(timeout_sec=nav_timeout):
+                # 复用既有 NAV_GOAL_REJECTED：技术方案称错误码需评审后冻结，
+                # 不擅自新增。代价是「Nav2 没起来」和「目标被拒绝」在错误码上
+                # 无法区分，故把原因写进 message，排障时看这句。
                 state.transition('FAILED', 'ZERO',
                                  f'navigation action server not available in {nav_timeout:.1f}s',
-                                 code='NAV_SERVER_UNAVAILABLE')
+                                 code='NAV_GOAL_REJECTED')
                 return self.finish(handle, goal, state, False, 'FAILED', handle.abort)
             nav_goal = NavigateToPose.Goal()
             nav_goal.pose = PoseStamped()

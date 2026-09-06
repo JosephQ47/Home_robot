@@ -30,7 +30,7 @@ import sys
 import time
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'ros2_ws/src/hr_hmmd'))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'src/hr_hmmd'))
 sys.path.insert(0, '/home/luckfox/.local/lib/python3.10/site-packages')
 
 import serial  # noqa: E402
@@ -152,7 +152,7 @@ def cmd_fit(args):
         print('⚠️ 误差超过 15 cm。官方明说本模块「不建议用作精准测距」，')
         print('   若线性拟合不住，就不要把它当距离传感器用，只当「远/近」阈值。')
     print(f'\n写入 hr_hmmd 配置：range_scale_m: {scale:.6f}')
-    print('位置：upper/ros2_ws/src/hr_hmmd/config/hmmd.yaml')
+    print('位置：upper/src/hr_hmmd/config/hmmd.yaml')
     print('改完必须重新 colcon build 并 source，否则跑的还是旧参数。')
     return 0
 

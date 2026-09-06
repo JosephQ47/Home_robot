@@ -21,7 +21,7 @@ udevadm info -q property -n /dev/ttyUSB0
 ## 安全实测
 
 ```bash
-cd /home/luckfox/d2lros2/Home_robot/upper/ros2_ws
+cd /home/luckfox/d2lros2/Home_robot/upper/src
 source /opt/ros/humble/setup.bash
 source install/setup.bash
 ros2 launch hr_hmmd hmmd.launch.py \
@@ -32,7 +32,7 @@ ros2 launch hr_hmmd hmmd.launch.py \
 
 ```bash
 source /opt/ros/humble/setup.bash
-source /home/luckfox/d2lros2/Home_robot/upper/ros2_ws/install/setup.bash
+source /home/luckfox/d2lros2/Home_robot/upper/src/install/setup.bash
 ros2 topic hz /hmmd/detection
 ros2 topic echo /hmmd/detection
 ros2 topic echo /diagnostics

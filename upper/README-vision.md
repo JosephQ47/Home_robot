@@ -14,7 +14,7 @@
 
 ```bash
 source Home_robot/upper/vision_env.sh
-cd Home_robot/upper/ros2_ws
+cd Home_robot/upper/src
 python -m colcon build --packages-select hr_camera hr_perception --symlink-install
 source install/local_setup.bash
 ```
@@ -35,7 +35,7 @@ UVC 枚举成功后，可直接把 `source` 设为 Linux 设备路径，并要�
 
 ```bash
 source Home_robot/upper/vision_env.sh
-cd Home_robot/upper/ros2_ws
+cd Home_robot/upper/src
 source install/local_setup.bash
 export ROS_DOMAIN_ID=61 ROS_LOCALHOST_ONLY=1
 ros2 launch hr_camera camera.launch.py \
@@ -99,9 +99,9 @@ ros2 topic echo /diagnostics --once
 
 ```bash
 source Home_robot/upper/vision_env.sh
-python -m pytest Home_robot/upper/ros2_ws/src/hr_perception/test/test_common.py -q
+python -m pytest Home_robot/upper/src/hr_perception/test/test_common.py -q
 ROS_DOMAIN_ID=61 ROS_LOCALHOST_ONLY=1 python \
-  Home_robot/upper/ros2_ws/src/hr_perception/test/verify_pipeline.py \
+  Home_robot/upper/src/hr_perception/test/verify_pipeline.py \
   --model /home/luckfox/Hi3516/vision-assets/yolov8n.pt \
   --image /home/luckfox/Hi3516/vision-assets/bus.jpg
 ```
@@ -142,7 +142,7 @@ ROS_DOMAIN_ID=61 ROS_LOCALHOST_ONLY=1 python \
 ```bash
 cd /home/luckfox/d2lros2
 source Home_robot/upper/vision_env.sh
-cd Home_robot/upper/ros2_ws
+cd Home_robot/upper/src
 python ../tools/rtsp_yolo_check.py   --source /home/luckfox/Hi3516/vision-assets/bus.jpg   --model /home/luckfox/Hi3516/vision-assets/yolov8n.pt   --duration 20   --require-detection   --target-class person
 ```
 
@@ -153,7 +153,7 @@ RTSP 实拍验收命令模板：
 ```bash
 cd /home/luckfox/d2lros2
 source Home_robot/upper/vision_env.sh
-cd Home_robot/upper/ros2_ws
+cd Home_robot/upper/src
 python ../tools/rtsp_yolo_check.py   --source rtsp://<当前板子IP>:554/0   --model /home/luckfox/Hi3516/vision-assets/yolov8n.pt   --duration 60   --require-detection   --target-class person   --publish-hz 8   --inference-hz 2   --image-size 320   --output-width 640   --log-dir /tmp/hr-rtsp-yolo-live
 ```
 
@@ -218,7 +218,7 @@ cp configs/sc4336p/config_entry.ini.orig_20260905 configs/sc4336p/config_entry.i
 ```bash
 cd /home/luckfox/d2lros2
 source Home_robot/upper/vision_env.sh
-cd Home_robot/upper/ros2_ws
+cd Home_robot/upper/src
 python -m colcon build --symlink-install
 python -m pytest src/hr_perception/test/test_common.py -q
 python src/hr_perception/test/verify_pipeline.py   --model /home/luckfox/Hi3516/vision-assets/yolov8n.pt   --image /home/luckfox/Hi3516/vision-assets/bus.jpg

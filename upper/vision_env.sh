@@ -12,7 +12,7 @@ if [ -d "$HR_VISION_HOME/ros-deps/root/opt/ros/humble" ]; then
 fi
 source "$HR_VISION_HOME/vision-venv/bin/activate"
 export YOLO_CONFIG_DIR="$HR_VISION_HOME/vision-assets/settings"
-if [ -f "$_hr_upper/ros2_ws/install/local_setup.bash" ]; then
-    source "$_hr_upper/ros2_ws/install/local_setup.bash"
+if [ -f "$_hr_upper/install/local_setup.bash" ]; then
+    source "$_hr_upper/install/local_setup.bash"
 fi
 unset _hr_upper _hr_deps
