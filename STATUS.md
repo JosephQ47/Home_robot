@@ -682,3 +682,50 @@ OpenCV 的 FFmpeg 后端里 `grab()` 本身就做解码，`retrieve()` 只做 YU
 
 标定后雷达再次失联（四路全 0 字节），而同时刻 Hi3516 控制台与下位机均正常，
 判断为雷达侧杜邦线接触不良，需人工重新插接。
+
+## 配置接线审计：14 个 config yaml 是死的（2026-09-07 上午）
+
+雷达接线修复后复测通过（9.5 Hz、57/57 有人帧、零坏帧），但发现**昨晚写进
+`hmmd.yaml` 的标定根本没生效**——`ros2 topic echo /hmmd/detection` 里
+`range_m` 仍是 NaN。
+
+根因是两层静默失效，都不报任何错：
+
+1. **`hmmd.launch.py` 根本不加载 `config/hmmd.yaml`**，参数全部来自 launch
+   参数，而 `range_scale_m` 的 launch 默认值写死是 `0.0`。
+2. 即便加载了也没用：yaml 顶层键写的是 `hr_hmmd`（包名），而 launch 里的节点名
+   是 `hmmd_radar_driver`，键名不符时 ROS 会**静默忽略整份文件**。
+
+顺手全仓审计，结果比预想严重：**18 个 config yaml 里只有 2 个真正接线**
+（`ekf.yaml`、`collision_monitor.yaml`），1 个加载了但键名不符
+（`local_motion.yaml` 写 `hr_local_motion`，节点名是
+`nav2_local_controller_adapter`），其余 14 个从未被任何 launch 或节点源码引用。
+
+**已修两处**：
+
+- `hr_hmmd`：launch 改为真正加载 yaml，键名对齐 `hmmd_radar_driver`。参数按来源
+  分两类——标定与门限来自 yaml（实测常量，改了要留证据），
+  `transport_enabled`/`port` 走 launch 覆盖（每次运行才决定）。
+  `range_scale_m` 从 launch 参数里删除，避免默认值再次盖掉标定。
+  **实测生效**：`ros2 param get /hmmd_radar_driver range_scale_m` = 0.018782，
+  `range_raw=114 → range_m=2.141`（不再是 NaN）。
+- `hr_local_motion`：yaml 键改为 `nav2_local_controller_adapter`。
+  已逐项核对，该 yaml 七个值与节点 `declare_parameter` 的默认值**完全一致**，
+  故本次修键不改变任何行为。
+
+**新增 `upper/tools/verify_config_wiring.py`** 拦截这一类问题：审计每个
+config yaml 是否被 launch 加载或被节点源码读取，以及顶层键是否等于节点名。
+键名不符判失败（确定性缺陷），未被加载只列出——其中一部分是为将来预留的占位
+（如 `locations.yaml` 在地图验收前必然为空），该不该接线要人裁决，不该由脚本
+替人决定。
+
+**仍是死配置的 14 个，待人裁决**：`hr_bringup/{diagnostics,system}.yaml`、
+`hr_camera/camera.yaml`、`hr_localization/{amcl,slam_toolbox}.yaml`、
+`hr_navigation/nav2_params.yaml`、`hr_perception/perception.yaml`、
+`hr_target_tracker/tracker.yaml`、`hr_task_manager/{locations,motion_phase,
+routes,schedules,search_areas,task_policy}.yaml`。
+
+其中 `tracker.yaml` 与 `task_policy.yaml` 涉及安全策略，风险最高：有人在里面
+设了安全参数会以为生效，实际被忽略。建议优先接线。
+
+**回归**：14 包构建通过；`colcon test` 12 项 0 错 0 失败；五个验收脚本全 PASS。

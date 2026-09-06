@@ -1,4 +1,5 @@
-hr_hmmd:
+# 顶层键必须等于 launch 里的节点名（hmmd_radar_driver），否则 ROS 静默忽略。
+hmmd_radar_driver:
   ros__parameters:
     transport_enabled: false
     port: /dev/hmmd_radar

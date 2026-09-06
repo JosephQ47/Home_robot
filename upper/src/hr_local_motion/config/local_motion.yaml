@@ -1,4 +1,7 @@
-hr_local_motion:
+# 顶层键必须等于 launch 里的节点名，否则 ROS 静默忽略整份文件、不报任何错。
+# 本文件曾写成 hr_local_motion（包名），而节点名是 nav2_local_controller_adapter，
+# 于是这些值一直没有生效。校验见 upper/tools/verify_config_wiring.py。
+nav2_local_controller_adapter:
   ros__parameters:
     output_enabled: false
     max_goal_distance_m: 0.5
