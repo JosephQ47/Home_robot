@@ -1,0 +1,24 @@
+collision_monitor:
+  ros__parameters:
+    base_frame_id: base_link
+    odom_frame_id: odom
+    cmd_vel_in_topic: /cmd_vel_auto
+    cmd_vel_out_topic: /cmd_vel
+    transform_tolerance: 0.2
+    source_timeout: 0.5
+    stop_pub_timeout: 1.0
+    polygons: [StopPolygon]
+    StopPolygon:
+      type: polygon
+      action_type: stop
+      # Polygon is deliberately invalid until footprint, latency and braking tests freeze it.
+      points: "[]"
+      min_points: 4
+      visualize: true
+      polygon_pub_topic: /collision_monitor/stop_polygon
+    observation_sources: [scan]
+    scan:
+      type: scan
+      topic: /scan
+      source_timeout: 0.5
+      enabled: true

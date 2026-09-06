@@ -1,0 +1,10 @@
+std_msgs/Header header
+string task_id
+string source
+string task_type
+string stage
+string status
+float32 progress
+string message
+string result_code
+string interruption_reason

@@ -1,0 +1,4 @@
+hr_perception:
+  ros__parameters:
+    backend: stub  # Choose cpu_yolo explicitly for the existing PC test backend.
+    model: ''

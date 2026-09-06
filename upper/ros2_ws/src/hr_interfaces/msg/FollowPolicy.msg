@@ -1,0 +1,8 @@
+std_msgs/Header header
+bool enabled
+string task_id
+float32 desired_distance_m
+float32 minimum_safe_distance_m
+float32 goal_update_period_sec
+float32 max_target_jump_m
+float32 lost_timeout_sec

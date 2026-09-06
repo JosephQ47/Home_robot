@@ -1,0 +1,4 @@
+<!-- Fail-closed placeholder. Replace only after Nav2 behavior acceptance. -->
+<root BTCPP_format="4" main_tree_to_execute="MainTree">
+  <BehaviorTree ID="MainTree"><AlwaysFailure/></BehaviorTree>
+</root>

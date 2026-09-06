@@ -1,0 +1,11 @@
+controller_server:
+  ros__parameters:
+    odom_topic: /odometry/filtered
+    cmd_vel_topic: /cmd_vel_auto
+    controller_frequency: 10.0
+    # Footprint, velocity and acceleration limits remain TBD after chassis tests.
+bt_navigator:
+  ros__parameters:
+    global_frame: map
+    robot_base_frame: base_link
+    odom_topic: /odometry/filtered

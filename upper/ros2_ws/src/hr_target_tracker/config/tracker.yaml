@@ -1,0 +1,6 @@
+hr_target_tracker:
+  ros__parameters:
+    max_age_sec: 1.0
+    camera_lidar_extrinsics: TBD
+    association_window_rad: TBD
+    cluster_threshold_m: TBD

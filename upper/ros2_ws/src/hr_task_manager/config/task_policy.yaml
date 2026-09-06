@@ -1,0 +1,4 @@
+hr_task_manager:
+  ros__parameters:
+    dependency_timeout_sec: 1.0
+    task_timeout_sec: 30.0

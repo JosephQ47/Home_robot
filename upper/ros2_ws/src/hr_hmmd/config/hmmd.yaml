@@ -1,0 +1,8 @@
+hr_hmmd:
+  ros__parameters:
+    transport_enabled: false
+    port: /dev/hmmd_radar
+    baud: 115200
+    configure_report_mode: true
+    stale_after_sec: 0.5
+    range_scale_m: 0.0  # Disabled until captured frames confirm the distance unit.

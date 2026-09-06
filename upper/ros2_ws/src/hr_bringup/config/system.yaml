@@ -1,0 +1,7 @@
+mode: mock
+hardware_transport_enabled: false
+command_output_enabled: false
+camera_source: synthetic
+perception_backend: stub
+planar_lidar: TBD
+presence_sensor: waveshare_hmmd

@@ -1,0 +1,7 @@
+hr_image_source:
+  ros__parameters:
+    source: synthetic
+    publish_hz: 5.0
+    output_width: 640
+    frame_id: camera_optical_frame
+    # Real UVC format, resolution and frame rate remain TBD until enumeration testing.

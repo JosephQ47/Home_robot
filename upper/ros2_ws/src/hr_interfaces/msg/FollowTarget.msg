@@ -1,0 +1,17 @@
+std_msgs/Header header
+uint8 INVALID=0
+uint8 OBSERVED=1
+uint8 ASSOCIATED=2
+uint8 LOCKED=3
+uint8 LOST=4
+uint8 state
+string target_id
+string class_name
+float32 confidence
+bool radar_associated
+float32 range_m
+float32 bearing_rad
+geometry_msgs/Point position_base
+geometry_msgs/PoseStamped recommended_goal
+bool follow_allowed
+string reason
