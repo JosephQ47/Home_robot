@@ -404,3 +404,31 @@ python ../tools/verify_motion_chain.py
 
 规则文件和脚本已完成语法及设备属性核对，但安装到 `/etc/udev/rules.d` 需要管理员权限，
 当前无免密 sudo，因此系统规则尚未改变。
+
+## 硬件复检与验收脚本偶发失败修复（2026-09-06 晚）
+
+USB 设备重新接入虚拟机后复检，**下位机与 HMMD 都收不到任何数据**：
+
+- 枚举正常：`1a86:55d4`（下位机，`/dev/ttyACM0`）、`1a86:55d5`（CH344 四路，
+  `/dev/ttyACM1..4`，COMC=ACM3 为 HMMD、COMD=ACM4 为 Hi3516 调试口）。
+- 权限正常：当前用户在 `dialout` 组，三个口均可读写，无进程占用。
+- 下位机 `/dev/ttyACM0` @230400 只读 5 秒：**0 字节**（此前记录为 50.36 Hz）。
+- CH344 四个口 @115200 各被动读 4 秒：**全部 0 字节**。
+- 用 pyserial 打开（DTR/RTS 均置位）复测下位机：仍为 0 字节，排除 DTR 门控。
+
+判断：`1a86:55d4/55d5` 是沁恒 CH34x **USB 转串口芯片**，靠 USB 自供电，所以
+即使后面挂的下位机和毫米波都没有供电，USB 侧照样正常枚举。**枚举成功不等于
+设备在线**，这一条今后排障时先查。待确认底盘电源与 HMMD 的 3.3 V 供电。
+
+新增 `upper/tools/hmmd_calibrate.py`：HMMD 串口自检与目标距离标定采集。
+`--probe` 自检、`--sample <真值米>` 采点、`--fit` 过原点最小二乘拟合标度。
+脚本硬编码拒绝打开 `/dev/ttyACM0`（下位机），已实测该护栏生效。标定的意义是
+`hmmd.yaml` 的 `range_scale_m` 目前为 0.0（`range_m` 发 NaN、`valid=false`）——
+官方称一个距离门 0.7 m，但目标距离字段的单位不等于 0.7 m，跟随链的最小安全
+距离依赖这个标度，猜错会让机器人以为还有 2 m 其实只有 0.5 m。
+
+修复 `verify_motion_chain.py` 的偶发失败：原写法在节点名出现后**只发一次**
+`/goal_pose` 就等 3 秒，而 DDS 的发布/订阅发现还要几百毫秒，goal 会被丢掉。
+实测连跑两次，一次 `RuntimeError: bounded odom goal produced no final velocity`、
+一次 PASS。改为先等 `get_subscription_count() > 0` 再持续重发，连跑三次全 PASS。
+验收脚本时好时坏比直接失败更糟——它会让人去怀疑被测代码，而坏的是判据本身。

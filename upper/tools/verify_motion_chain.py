@@ -129,10 +129,22 @@ def main():
         if subscribers != {'hr_bridge'}:
             raise RuntimeError(f'unexpected /cmd_vel subscribers: {sorted(subscribers)}')
 
+        # 节点名出现 != 话题连接就绪。DDS 的发布/订阅发现要再花几百毫秒，
+        # 在那之前发出去的 goal 没有任何订阅者，会被直接丢掉。
+        # 原来的写法是「只发一次，等 3 秒」，于是这条判据偶发失败
+        # （2026-09-06 实测：连跑两次，一次 RuntimeError 一次 PASS）。
+        # 验收脚本时好时坏比直接失败更糟——它会让人怀疑被测代码，
+        # 而真正坏掉的是判据本身。这里改成先等订阅者出现，再持续重发。
+        if not wait_until(node, lambda: node.goal_pub.get_subscription_count() > 0,
+                          timeout=10.0):
+            raise RuntimeError('/goal_pose has no subscriber; local controller not ready')
         spin_for(node, 0.5)
         node.clear_samples()
-        node.publish_goal()
-        if not wait_until(node, lambda: any(nonzero(m) for m in node.final), timeout=3.0):
+        deadline = time.monotonic() + 5.0
+        while time.monotonic() < deadline and not any(nonzero(m) for m in node.final):
+            node.publish_goal()
+            spin_for(node, 0.2)
+        if not any(nonzero(m) for m in node.final):
             raise RuntimeError('bounded odom goal produced no final velocity')
         if max(abs(m.linear.x) for m in node.final) > 0.1001:
             raise RuntimeError('linear velocity exceeded validation limit')
