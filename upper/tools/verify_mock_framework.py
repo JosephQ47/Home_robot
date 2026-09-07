@@ -6,7 +6,7 @@ import subprocess
 import time
 
 from hr_interfaces.action import ExecuteTask
-from hr_interfaces.msg import FollowTarget
+from hr_interfaces.msg import RobotStatus, FollowTarget
 import rclpy
 from rclpy.action import ActionClient
 from rclpy.node import Node
@@ -35,8 +35,11 @@ def main():
                               start_new_session=True, env=launch_env)
     rclpy.init(); node = Node('verify_mock_framework')
     target = {'message': None}
+    robot = {'message': None}
     node.create_subscription(FollowTarget, '/follow_target',
                              lambda msg: target.__setitem__('message', msg), 10)
+    node.create_subscription(RobotStatus, '/robot_status',
+                             lambda msg: robot.__setitem__('message', msg), 10)
     try:
         ready = wait_until(node, lambda: REQUIRED_TOPICS <= {name for name, _ in node.get_topic_names_and_types()})
         if not ready: raise RuntimeError('required mock topics did not appear')
@@ -49,6 +52,13 @@ def main():
         client = ActionClient(node, ExecuteTask, '/task/execute')
         if not client.wait_for_server(timeout_sec=10.0):
             raise RuntimeError('/task/execute unavailable')
+        # 必须先等 RobotStatus 到位再提交任务。
+        # 任务准入要求状态新鲜且 safety_permit 为真（node.py 的 PRECHECK）；
+        # 抢在第一条 RobotStatus 之前提交，任务会被判 REJECTED —— 这正是
+        # 本脚本此前偶发失败的原因（错误信息拆分后才看清是 REJECTED 而非超时）。
+        if not wait_until(node, lambda: robot['message'] is not None
+                          and robot['message'].safety_permit):
+            raise RuntimeError('mock RobotStatus 未就绪或 safety_permit 为假')
         goal = ExecuteTask.Goal()
         goal.task_id, goal.source, goal.task_type = 'framework-check', 'TEST', 'observe'
         goal.map_id, goal.area_id, goal.target_class, goal.mode = 'mock', 'mock', 'person', 'observe'

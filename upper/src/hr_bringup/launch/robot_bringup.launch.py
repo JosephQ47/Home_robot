@@ -21,6 +21,9 @@ def generate_launch_description():
         DeclareLaunchArgument('model', default_value=''),
         DeclareLaunchArgument('local_motion_enabled', default_value='false'),
         DeclareLaunchArgument('tracker_mode', default_value='disabled'),
+        # 障碍源：scan（正式）或 hmmd（无激光雷达时的临时替代）。
+        DeclareLaunchArgument('obstacle_source', default_value='scan'),
+        DeclareLaunchArgument('stop_distance_m', default_value='0.40'),
         DeclareLaunchArgument('camera_width_px', default_value='0.0'),
         DeclareLaunchArgument('camera_hfov_rad', default_value='0.0'),
         IncludeLaunchDescription(source('hr_description', 'description.launch.py')),
@@ -42,6 +45,12 @@ def generate_launch_description():
             'image_width_px': LaunchConfiguration('camera_width_px'),
             'horizontal_fov_rad': LaunchConfiguration('camera_hfov_rad')}.items()),
         IncludeLaunchDescription(source('hr_task_manager', 'task_manager.launch.py')),
+        # Collision Monitor 此前不在本入口内 —— 于是 hr_local_motion 发的
+        # /cmd_vel_auto 没人转成 /cmd_vel，实机入口即使全部开关打开也一步不动。
+        IncludeLaunchDescription(source('hr_navigation', 'validation_collision.launch.py'),
+                                 launch_arguments={
+            'obstacle_source': LaunchConfiguration('obstacle_source'),
+            'stop_distance_m': LaunchConfiguration('stop_distance_m')}.items()),
         IncludeLaunchDescription(source('hr_local_motion', 'local_motion.launch.py'), launch_arguments={
             'enable': LaunchConfiguration('local_motion_enabled')}.items()),
         IncludeLaunchDescription(source('hr_web_ui', 'web_ui.launch.py')),
