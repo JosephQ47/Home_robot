@@ -1,6 +1,28 @@
+# 顶层键必须等于节点名（hr_target_tracker），否则 ROS 静默忽略整份文件。
+# 校验：upper/tools/verify_config_wiring.py
+#
+# 本文件在 2026-09-07 之前从未被任何 launch 加载 —— 看着权威，改了不生效。
 hr_target_tracker:
   ros__parameters:
-    max_age_sec: 1.0
-    camera_lidar_extrinsics: TBD
-    association_window_rad: TBD
-    cluster_threshold_m: TBD
+    # 目标观测的最大有效期。超过即视为丢失，跟随立刻停。
+    #
+    # ⚠️ 接线前本文件写的是 1.0，而节点 declare_parameter 的默认值是 0.5。
+    # 接线会让 1.0 真正生效 —— 等于把一个安全门限放宽一倍，而 1.0 没有任何
+    # 依据。故此处取节点原有的 0.5，保证接线不改变行为。
+    # 若确有理由用 1.0，请连同实测依据一起改，不要只改数字。
+    max_age_sec: 0.5
+
+    # 检测置信度下限。低于此值不参与关联。
+    minimum_confidence: 0.5
+
+    # HMMD 只能给人体径向距离，其他类别没有距离来源。
+    hmmd_supported_class: person
+
+    # ── 以下为待实测项，实测前不给值 ────────────────────────────────
+    # 写法与 hr_task_manager/config/locations.yaml 一致：TBD 放注释，不放值。
+    # 若写成 `association_window_rad: TBD`，将来该参数被声明为 float 时，
+    # 字符串会导致节点启动失败。
+    #
+    # camera_lidar_extrinsics:   # TBD，需相机-雷达外参标定
+    # association_window_rad:    # TBD，需外参与视场角实测后确定
+    # cluster_threshold_m:       # TBD，需二维扫描聚类实测后确定

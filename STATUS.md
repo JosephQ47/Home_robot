@@ -729,3 +729,41 @@ routes,schedules,search_areas,task_policy}.yaml`。
 设了安全参数会以为生效，实际被忽略。建议优先接线。
 
 **回归**：14 包构建通过；`colcon test` 12 项 0 错 0 失败；五个验收脚本全 PASS。
+
+### 接线 tracker.yaml 与 task_policy.yaml（2026-09-07）
+
+按用户指示接线这两个安全相关配置。**接线原则：不改变现有行为**——把原本被忽略
+的值突然生效，等于在无人复核时改了参数。
+
+`task_policy.yaml`：两个值（`dependency_timeout_sec` 1.0、`task_timeout_sec`
+30.0）与节点 `declare_parameter` 默认值完全一致，直接接线，零行为变化。
+
+`tracker.yaml`：原文件有三处问题，接线前已处置。
+
+| 项 | 原值 | 处置 |
+|---|---|---|
+| `max_age_sec` | **1.0**（节点默认 0.5） | **取 0.5**。照搬会把目标新鲜度这个安全门限放宽一倍，而 1.0 没有任何依据。若确要用 1.0，请连同实测依据一起改 |
+| `camera_lidar_extrinsics` | `TBD`（字符串） | 改为注释形式 |
+| `association_window_rad` | `TBD` | 改为注释形式 |
+| `cluster_threshold_m` | `TBD` | 改为注释形式 |
+
+三个 `TBD` 改注释的理由：节点当前未声明这些参数，留作字符串值虽暂时无害，但将来
+一旦声明为 float，字符串会导致**节点启动失败**。写法与本仓
+`hr_task_manager/config/locations.yaml` 的 `locations: {}  # TBD ...` 一致——
+TBD 放注释，不放值。同时补齐了 `minimum_confidence`、`hmmd_supported_class`
+两项原本缺失但节点会用到的值（均取节点默认值）。
+
+**实测生效**：`ros2 param get /hr_target_tracker max_age_sec` = 0.5、
+`minimum_confidence` = 0.5、`hmmd_supported_class` = person；节点日志零报错
+（TBD 若留作值会在此处报参数类型错）。
+
+**审计工具自身也修了一处误判**：`verify_config_wiring.py` 原来只看 launch 里
+显式写的 `name=`，而这两个 launch 都不写 name、节点名来自源码的
+`super().__init__(...)`，于是把完全正常的写法报成键名不符。已改为两个来源都看。
+脚本自己先踩了一遍它要拦的那类问题。
+
+**当前审计结果**：18 个 config yaml —— 已接线 6 · 键名不符 0 · 死配置 12。
+
+**回归**：14 包构建通过；`colcon test` 12 项 0 错 0 失败；五个验收脚本全 PASS
+（`verify_mock_framework` 在一次紧跟完整构建的运行中偶发失败一次，随后连跑 4 次
+全过，判断为资源竞争；下次失败时错误信息会指明是"结果超时"还是"跑完但失败"）。

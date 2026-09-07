@@ -1,4 +1,11 @@
+# 顶层键必须等于节点名（hr_task_manager），否则 ROS 静默忽略整份文件。
+# 校验：upper/tools/verify_config_wiring.py
+#
+# 本文件在 2026-09-07 之前从未被任何 launch 加载。两个值与节点
+# declare_parameter 的默认值完全一致，故本次接线不改变任何行为。
 hr_task_manager:
   ros__parameters:
+    # 依赖数据的新鲜度上限（RobotStatus 等）。超过即视为不满足准入条件。
     dependency_timeout_sec: 1.0
+    # 单个任务的执行超时。
     task_timeout_sec: 30.0

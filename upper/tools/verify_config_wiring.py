@@ -31,9 +31,20 @@ from pathlib import Path
 SRC = Path(__file__).resolve().parents[1] / 'src'
 
 
-def node_names(launch_text):
-    """launch 文件里声明的所有节点名。"""
-    return set(re.findall(r"name=['\"]([\w/]+)['\"]", launch_text))
+def node_names(launch_text, pkg_dir):
+    """该 launch 可能产生的节点名。
+
+    两个来源都要看，否则会误判：
+      · launch 里显式写的 name=...
+      · launch 没写 name 时，节点名来自源码的 super().__init__('...')
+    只取其一会把「launch 不写 name、靠源码默认名」这种完全正常的写法
+    报成键名不符 —— 本脚本自己就先踩过这一脚。
+    """
+    names = set(re.findall(r"name=['\"]([\w/]+)['\"]", launch_text))
+    for src in pkg_dir.glob('*/*.py'):
+        names.update(re.findall(r"super\(\)\.__init__\(\s*['\"]([\w/]+)['\"]", 
+                                src.read_text(encoding='utf-8')))
+    return names
 
 
 def top_key(yaml_path):
@@ -64,7 +75,7 @@ def audit():
             continue
         key = top_key(y)
         for lf in holders:
-            names = node_names(launch_text[lf])
+            names = node_names(launch_text[lf], lf.parent.parent)
             if key.startswith('/**') or key in names:
                 wired.append((y, lf.name, key))
             else:
