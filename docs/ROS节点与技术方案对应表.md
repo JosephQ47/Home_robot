@@ -24,15 +24,15 @@ ROS 运行时节点名优先采用方案中的名称；硬件替代件和临时�
 | SLAM | `hr_localization` | `/slam_toolbox` | `/scan`、TF → `/map` | ⚪ | 配置就位，待实机 |
 | AMCL | `hr_localization` | `/amcl` + `/map_server` | `/map`、`/scan`、TF | ⚪ | 已接入 `localization.launch.py` 的 navigation 模式（需 `map:=`）；与 slam_toolbox 互斥；缺已验收地图 |
 | Nav2 | `hr_navigation` | `/planner_server`、`/controller_server`、`/behavior_server`、`/bt_navigator`、`/waypoint_follower` | Nav2 Action → **`/cmd_vel_nav`** | ⚪ | 节点组与 lifecycle_manager 已接入 `navigation.launch.py`；速度/加速度/footprint 均为**占位值待实测冻结**，默认不启用 |
-| AprilTag 充电桩定位 | `hr_docking` | `/hr_dock_pose_adapter` | AprilTag + `CameraInfo` → `/detected_dock_pose` | 🔵 | **新增**；ID 门控/超时/跳变/偏置换算已实现并有 11 条单元测试，Tag 与外参待实测 |
-| AprilTag 检测 | （上游 `apriltag_ros`） | `/apriltag_node` | RGB → `/detections/apriltag` | ⚪ | 依赖包可由 `scripts/install_deps.sh docking` 安装；本机尚未安装 |
-| 精对接 | （上游 `opennav_docking`） | `/docking_server` | `DockRobot` → `/cmd_vel_dock` | ⚪ | 依赖包可由 `scripts/install_deps.sh docking` 安装；充电桩未到位 |
-| 自动速度仲裁 | `hr_motion_mux` | `/hr_motion_mux` | `/cmd_vel_nav` + `/cmd_vel_dock` → **唯一 `/cmd_vel_auto`** | 🟡 | **新增**；12 条单元测试 + 运行时验收（见 `docs/acceptance/hr_motion_mux验收.md`） |
-| Collision Monitor | `hr_navigation` | `/collision_monitor` | `/cmd_vel_auto` → `/cmd_vel` | ⚪ | 名称与速度链一致；**停止区多边形仍为空**，待实测制动距离冻结 |
+| AprilTag 充电桩定位 | `hr_docking` | `/hr_dock_pose_adapter` | `/detections` + TF + `CameraInfo` → `/detected_dock_pose` | 🟡 | **新增**；位姿由 **TF** 取（`apriltag_msgs` 不含位姿），像素门控 + 几何门控 + TF 新鲜度；11 条单元测试 + 8 项运行时验收（见 [末端视觉与回充位姿验收](acceptance/末端视觉与回充位姿验收.md)）|
+| AprilTag 检测 | （上游 `apriltag_ros`） | `/apriltag_node` | RGB → `/detections` + Tag TF | ⚪ | 依赖包**已安装**；待真实 Tag 印制件与相机 |
+| 精对接 | （上游 `opennav_docking`） | `/docking_server` | `DockRobot` → `/cmd_vel_dock` | ⚪ | 依赖包**已安装**；充电桩未到位，Action 闭环未验 |
+| 自动速度仲裁 | `hr_motion_mux` | `/hr_motion_mux` | `/cmd_vel_nav` + `/cmd_vel_dock` → **唯一 `/cmd_vel_auto`** | 🟡 | **新增**；12 条单元测试 + 13 项运行时验收（[mux](acceptance/hr_motion_mux验收.md) · [全链](acceptance/速度链路验收.md)）|
+| Collision Monitor | `hr_navigation` | `/collision_monitor` | `/cmd_vel_auto` + `/scan` → `/cmd_vel` | 🟡 | 已验证可 configure/activate 并真正行使否决（见 [速度链路验收](acceptance/速度链路验收.md)）；**停止区尺寸仍为占位值**，待实测制动距离冻结 |
 | 上下位机桥 | `hr_bridge` | `/hr_bridge` | `/cmd_vel`、`/wheel/odom_raw`、`/imu/data`、`/robot_status`、`/battery_state` | 🟡 | `/battery_state` 为新方案新增，待下位机电池帧接入 |
 | 网页任务入口 | `hr_web_ui` | `/hr_web_ui` | HTTP/WS ↔ `/task/execute` | 🟡 | 前后端已跑通；Mock 与 ROS 两种适配器 |
 | 机械臂控制 | `hr_arm_controller` | `/hr_arm_controller` | `/arm/execute` Action → `/arm/joint_trajectory` | 🟡 | **新增**；状态机 + 六轴 IK + Action 服务端均已实现；23 条 IK 测试 + 12 条状态机测试 + 6 项运行时验收（见 [机械臂链路验收](acceptance/机械臂链路验收.md)）；连杆长度为占位值 |
-| 机械臂视觉 | `hr_arm_perception` | `/hr_arm_perception` | D435i RGB-D + 检测 → `/arm/grasp_candidates` | 🔵 | **新增**；标定校验、深度门控、抓取候选已实现，28 条单元测试；无有效手眼标定拒绝启动；D435i 未到位 |
+| 机械臂视觉 | `hr_arm_perception` | `/hr_arm_perception` | D435i RGB-D + `Detection2DArray` → `/arm/grasp_candidates` | 🟡 | **新增**；标定校验、深度门控、抓取候选；28 条单元测试 + 8 项运行时验收；无有效手眼标定拒绝启动；D435i 未到位 |
 | 机械臂驱动 | `hr_arm_driver` | `/hr_arm_driver` | `/arm/joint_trajectory` → 舵机控制器；`/arm/joint_states` | 🟡 | **新增**；帧协议 + CRC + 重同步已实现，14 条单元测试；`transport=mock` 可在 PC 跑通全链；真实控制器未选型 |
 | 语音指令映射 | `hr_voice_command` | `/hr_voice_command` | 转写 → `ExecuteTask(source=VOICE)` | 🔵 | **新增**；白名单意图映射与拒绝策略已实现并有 12 条单元测试 |
 | 语音采集 | `hr_voice_capture` | `/hr_voice_capture` | 麦克风/文本 → `/voice/transcript_in` | 🟡 | **新增**；唤醒门 + 可替换 ASR 适配器（text/vosk），12 条单元测试 + 6 项运行时验收（见 [语音链路验收](acceptance/语音链路验收.md)）；麦克风未选型 |

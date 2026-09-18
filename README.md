@@ -11,7 +11,7 @@
 [![Nav2](https://img.shields.io/badge/Nav2-Navigation-4A90D9)](https://navigation.ros.org/)
 [![License](https://img.shields.io/badge/License-Apache%202.0-D22128)](LICENSE)
 
-<sub>22 个 ROS 2 包 · 136 条安全规则单元测试 · 18 项运行时验收 · 下位机四路闭环与安全链已实机验收</sub>
+<sub>22 个 ROS 2 包 · 148 条安全规则单元测试 · 41 项运行时验收 · 下位机四路闭环与安全链已实机验收</sub>
 
 </div>
 
@@ -125,11 +125,18 @@ python3 web_control/backend/app.py --adapter ros --host 0.0.0.0 --port 8080  # �
 项目规范里有一条硬约束：**验收标准必须可判定，证据必须落盘**——
 「能跑」「实测正常」不算数，`ros2 topic hz` 的数字、`colcon test-result` 的输出、bag 文件才算。
 
-一个具体例子：`hr_motion_mux` 的运行时验收发现了 `hr_task_manager` 的一个真实缺陷——
-它只在状态迁移时发布一次阶段授权，而 mux 把阶段当作**会过期的授权**处理，
-于是导航开始 1 秒后底盘就被归零。修法是让任务管理器持续续发授权，
-而不是放宽 mux 的超时——放宽超时等于让一个已经死掉的任务管理器继续授权运动。
-过程记录在 [`docs/acceptance/hr_motion_mux验收.md`](docs/acceptance/hr_motion_mux验收.md)。
+这么做是有回报的。**目前为止，每一个真正危险的缺陷都是「跑起来」而不是「读代码」发现的**：
+
+| 缺陷 | 怎么暴露的 |
+|---|---|
+| 任务管理器只发一次阶段授权，导航 1 秒后底盘被归零 | `hr_motion_mux` 运行时验收 |
+| 底盘停稳判据读了不存在的字段，「没数据」被当成「已停稳」 | 写机械臂运行时验收脚本时 |
+| 逆运动学符号配对写反，返回镜像姿态——不报错，只是抓空 | FK→IK 往返测试 |
+| `apriltag_msgs` 根本不含位姿，原实现假设的字段不存在 | 装上 `apriltag_ros` 之后首次运行 |
+| TF 缓存让相机看不见 Tag 之后仍返回旧位姿 | 改用 TF 后的失效注入 |
+| 停止区多边形写成字符串，节点 configure 直接失败 | 真的去启动它的时候 |
+
+全部过程记录在 [`docs/acceptance/`](docs/acceptance/)。
 
 ---
 
@@ -145,16 +152,8 @@ source install/setup.bash
 # 安全 Mock 总入口：不连接硬件，不发布任何速度
 ros2 launch hr_bringup mock.launch.py
 
-# 纯逻辑单元测试：不需要 ROS 运行时，也不需要硬件（136 条）
-cd .. && python3 -m pytest \
-    upper/src/hr_motion_mux/test upper/src/hr_docking/test \
-    upper/src/hr_depth_obstacle/test upper/src/hr_arm_controller/test \
-    upper/src/hr_arm_perception/test upper/src/hr_arm_driver/test \
-    upper/src/hr_voice_command/test upper/src/hr_voice_capture/test tests -q
-
-# 需要 source 过 overlay 的那部分（8 条）
-python3 -m pytest upper/src/hr_bridge/test upper/src/hr_task_manager/test \
-    upper/src/hr_local_motion/test upper/src/hr_hmmd/test -q
+# 全部单元测试（148 条）
+cd .. && python3 -m pytest upper/src/*/test tests -q
 
 # 机械臂全链（mock 舵机控制器，PC 上即可跑通完整抓取序列）
 ros2 run hr_arm_driver arm_driver --ros-args -p transport:=mock &
@@ -166,7 +165,7 @@ ros2 topic pub --once /voice/text_in std_msgs/String "data: '小家'"
 ros2 topic pub --once /voice/text_in std_msgs/String "data: '去客厅|0.93'"
 ```
 
-上游依赖（Nav2 节点组、AprilTag、OpenNav Docking、vision_msgs 等）用一条命令装齐：
+上游依赖（Nav2 节点组、AprilTag、OpenNav Docking、vision_msgs 等）先装齐：
 
 ```bash
 ./scripts/install_deps.sh all     # 或 core / docking / hardware / python

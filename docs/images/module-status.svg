@@ -31,11 +31,11 @@
 <text x="1192" y="212.0" font-size="10.5" font-weight="400" text-anchor="end" fill="#1a7f37" font-family="ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace">回环·丢帧·乱序</text>
 <line x1="32" y1="226" x2="1208" y2="226" stroke="#e7ebef" stroke-width="1"/>
 <rect x="32" y="226" width="1176" height="38" rx="4" fill="#fbfcfd" stroke="#fbfcfd" stroke-width="0"/>
-<text x="48" y="250.0" font-size="12" font-weight="600" text-anchor="start" fill="#1f2328">hr_motion_mux 速度仲裁</text>
+<text x="48" y="250.0" font-size="12" font-weight="600" text-anchor="start" fill="#1f2328">自动速度链（mux + 停止区）</text>
 <rect x="430" y="234" width="95" height="22" rx="11" fill="#ddf4ff" stroke="#1a73e8" stroke-width="1.2"/>
 <text x="477.5" y="249.0" font-size="10.5" font-weight="700" text-anchor="middle" fill="#1a73e8">已实现·有测试</text>
-<text x="556" y="250.0" font-size="11" font-weight="400" text-anchor="start" fill="#57606a">运行时验收 /cmd_vel_auto publisher 恰为 1；待与真实 Nav2 联调</text>
-<text x="1192" y="250.0" font-size="10.5" font-weight="400" text-anchor="end" fill="#1a7f37" font-family="ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace">12 条 + 6 项运行时</text>
+<text x="556" y="250.0" font-size="11" font-weight="400" text-anchor="start" fill="#57606a">两话题各恰好一个发布者；阶段互斥与激光否决端到端跑通</text>
+<text x="1192" y="250.0" font-size="10.5" font-weight="400" text-anchor="end" fill="#1a7f37" font-family="ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace">12 条 + 7 项运行时</text>
 <line x1="32" y1="264" x2="1208" y2="264" stroke="#e7ebef" stroke-width="1"/>
 <text x="48" y="288.0" font-size="12" font-weight="600" text-anchor="start" fill="#1f2328">hr_arm_controller 抓取与 IK</text>
 <rect x="430" y="272" width="95" height="22" rx="11" fill="#ddf4ff" stroke="#1a73e8" stroke-width="1.2"/>
@@ -44,50 +44,50 @@
 <text x="1192" y="288.0" font-size="10.5" font-weight="400" text-anchor="end" fill="#1a7f37" font-family="ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace">35 条 + 6 项运行时</text>
 <line x1="32" y1="302" x2="1208" y2="302" stroke="#e7ebef" stroke-width="1"/>
 <rect x="32" y="302" width="1176" height="38" rx="4" fill="#fbfcfd" stroke="#fbfcfd" stroke-width="0"/>
-<text x="48" y="326.0" font-size="12" font-weight="600" text-anchor="start" fill="#1f2328">hr_arm_driver 舵机链路</text>
+<text x="48" y="326.0" font-size="12" font-weight="600" text-anchor="start" fill="#1f2328">hr_arm_perception 末端视觉</text>
 <rect x="430" y="310" width="95" height="22" rx="11" fill="#ddf4ff" stroke="#1a73e8" stroke-width="1.2"/>
 <text x="477.5" y="325.0" font-size="10.5" font-weight="700" text-anchor="middle" fill="#1a73e8">已实现·有测试</text>
-<text x="556" y="326.0" font-size="11" font-weight="400" text-anchor="start" fill="#57606a">帧协议/CRC/重同步完整，mock 后端可端到端；控制器未选型</text>
-<text x="1192" y="326.0" font-size="10.5" font-weight="400" text-anchor="end" fill="#1a7f37" font-family="ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace">14 条单元测试</text>
+<text x="556" y="326.0" font-size="11" font-weight="400" text-anchor="start" fill="#57606a">真实 vision_msgs 下反投影精确；D435i 与手眼标定未到位</text>
+<text x="1192" y="326.0" font-size="10.5" font-weight="400" text-anchor="end" fill="#1a7f37" font-family="ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace">28 条 + 8 项运行时</text>
 <line x1="32" y1="340" x2="1208" y2="340" stroke="#e7ebef" stroke-width="1"/>
-<text x="48" y="364.0" font-size="12" font-weight="600" text-anchor="start" fill="#1f2328">hr_voice_capture 唤醒与采集</text>
+<text x="48" y="364.0" font-size="12" font-weight="600" text-anchor="start" fill="#1f2328">hr_docking AprilTag 定位</text>
 <rect x="430" y="348" width="95" height="22" rx="11" fill="#ddf4ff" stroke="#1a73e8" stroke-width="1.2"/>
 <text x="477.5" y="363.0" font-size="10.5" font-weight="700" text-anchor="middle" fill="#1a73e8">已实现·有测试</text>
-<text x="556" y="364.0" font-size="11" font-weight="400" text-anchor="start" fill="#57606a">唤醒门与 ASR 适配器完整；麦克风未选型</text>
-<text x="1192" y="364.0" font-size="10.5" font-weight="400" text-anchor="end" fill="#1a7f37" font-family="ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace">12 条 + 6 项运行时</text>
+<text x="556" y="364.0" font-size="11" font-weight="400" text-anchor="start" fill="#57606a">真实 apriltag_msgs + TF 下位姿与门控跑通；Tag 实物未到位</text>
+<text x="1192" y="364.0" font-size="10.5" font-weight="400" text-anchor="end" fill="#1a7f37" font-family="ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace">11 条 + 8 项运行时</text>
 <line x1="32" y1="378" x2="1208" y2="378" stroke="#e7ebef" stroke-width="1"/>
 <rect x="32" y="378" width="1176" height="38" rx="4" fill="#fbfcfd" stroke="#fbfcfd" stroke-width="0"/>
-<text x="48" y="402.0" font-size="12" font-weight="600" text-anchor="start" fill="#1f2328">hr_task_manager 任务编排</text>
+<text x="48" y="402.0" font-size="12" font-weight="600" text-anchor="start" fill="#1f2328">hr_arm_driver 舵机链路</text>
 <rect x="430" y="386" width="95" height="22" rx="11" fill="#ddf4ff" stroke="#1a73e8" stroke-width="1.2"/>
 <text x="477.5" y="401.0" font-size="10.5" font-weight="700" text-anchor="middle" fill="#1a73e8">已实现·有测试</text>
-<text x="556" y="402.0" font-size="11" font-weight="400" text-anchor="start" fill="#57606a">已支持 DOCKING 阶段与授权续发；低电回充分支待电池数据</text>
-<text x="1192" y="402.0" font-size="10.5" font-weight="400" text-anchor="end" fill="#1a7f37" font-family="ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace">生命周期测试</text>
+<text x="556" y="402.0" font-size="11" font-weight="400" text-anchor="start" fill="#57606a">帧协议/CRC/重同步完整，mock 后端可端到端；控制器未选型</text>
+<text x="1192" y="402.0" font-size="10.5" font-weight="400" text-anchor="end" fill="#1a7f37" font-family="ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace">14 条单元测试</text>
 <line x1="32" y1="416" x2="1208" y2="416" stroke="#e7ebef" stroke-width="1"/>
-<text x="48" y="440.0" font-size="12" font-weight="600" text-anchor="start" fill="#1f2328">hr_web_ui 网页控制台</text>
+<text x="48" y="440.0" font-size="12" font-weight="600" text-anchor="start" fill="#1f2328">hr_voice_capture 唤醒与采集</text>
 <rect x="430" y="424" width="95" height="22" rx="11" fill="#ddf4ff" stroke="#1a73e8" stroke-width="1.2"/>
 <text x="477.5" y="439.0" font-size="10.5" font-weight="700" text-anchor="middle" fill="#1a73e8">已实现·有测试</text>
-<text x="556" y="440.0" font-size="11" font-weight="400" text-anchor="start" fill="#57606a">前后端跑通，Mock / ROS 双适配器</text>
-<text x="1192" y="440.0" font-size="10.5" font-weight="400" text-anchor="end" fill="#1a7f37" font-family="ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace">后端单元测试</text>
+<text x="556" y="440.0" font-size="11" font-weight="400" text-anchor="start" fill="#57606a">唤醒门与 ASR 适配器完整；麦克风未选型</text>
+<text x="1192" y="440.0" font-size="10.5" font-weight="400" text-anchor="end" fill="#1a7f37" font-family="ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace">12 条 + 6 项运行时</text>
 <line x1="32" y1="454" x2="1208" y2="454" stroke="#e7ebef" stroke-width="1"/>
 <rect x="32" y="454" width="1176" height="38" rx="4" fill="#fbfcfd" stroke="#fbfcfd" stroke-width="0"/>
-<text x="48" y="478.0" font-size="12" font-weight="600" text-anchor="start" fill="#1f2328">hr_perception 视觉识别</text>
+<text x="48" y="478.0" font-size="12" font-weight="600" text-anchor="start" fill="#1f2328">hr_task_manager 任务编排</text>
 <rect x="430" y="462" width="95" height="22" rx="11" fill="#ddf4ff" stroke="#1a73e8" stroke-width="1.2"/>
 <text x="477.5" y="477.0" font-size="10.5" font-weight="700" text-anchor="middle" fill="#1a73e8">已实现·有测试</text>
-<text x="556" y="478.0" font-size="11" font-weight="400" text-anchor="start" fill="#57606a">CPU YOLO 跑通；正式方案为 RKNN，未转换</text>
-<text x="1192" y="478.0" font-size="10.5" font-weight="400" text-anchor="end" fill="#1a7f37" font-family="ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace">流水线校验</text>
+<text x="556" y="478.0" font-size="11" font-weight="400" text-anchor="start" fill="#57606a">已支持 DOCKING 阶段与授权续发；低电回充分支待电池数据</text>
+<text x="1192" y="478.0" font-size="10.5" font-weight="400" text-anchor="end" fill="#1a7f37" font-family="ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace">生命周期测试</text>
 <line x1="32" y1="492" x2="1208" y2="492" stroke="#e7ebef" stroke-width="1"/>
-<text x="48" y="516.0" font-size="12" font-weight="600" text-anchor="start" fill="#1f2328">hr_arm_perception 末端视觉</text>
-<rect x="430" y="500" width="107" height="22" rx="11" fill="#fff8c5" stroke="#9a6700" stroke-width="1.2"/>
-<text x="483.5" y="515.0" font-size="10.5" font-weight="700" text-anchor="middle" fill="#9a6700">骨架·逻辑有测试</text>
-<text x="556" y="516.0" font-size="11" font-weight="400" text-anchor="start" fill="#57606a">标定校验与深度门控完整；D435i 与手眼标定均未到位</text>
-<text x="1192" y="516.0" font-size="10.5" font-weight="400" text-anchor="end" fill="#1a7f37" font-family="ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace">28 条单元测试</text>
+<text x="48" y="516.0" font-size="12" font-weight="600" text-anchor="start" fill="#1f2328">hr_web_ui 网页控制台</text>
+<rect x="430" y="500" width="95" height="22" rx="11" fill="#ddf4ff" stroke="#1a73e8" stroke-width="1.2"/>
+<text x="477.5" y="515.0" font-size="10.5" font-weight="700" text-anchor="middle" fill="#1a73e8">已实现·有测试</text>
+<text x="556" y="516.0" font-size="11" font-weight="400" text-anchor="start" fill="#57606a">前后端跑通，Mock / ROS 双适配器</text>
+<text x="1192" y="516.0" font-size="10.5" font-weight="400" text-anchor="end" fill="#1a7f37" font-family="ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace">后端单元测试</text>
 <line x1="32" y1="530" x2="1208" y2="530" stroke="#e7ebef" stroke-width="1"/>
 <rect x="32" y="530" width="1176" height="38" rx="4" fill="#fbfcfd" stroke="#fbfcfd" stroke-width="0"/>
-<text x="48" y="554.0" font-size="12" font-weight="600" text-anchor="start" fill="#1f2328">hr_docking AprilTag 定位</text>
-<rect x="430" y="538" width="107" height="22" rx="11" fill="#fff8c5" stroke="#9a6700" stroke-width="1.2"/>
-<text x="483.5" y="553.0" font-size="10.5" font-weight="700" text-anchor="middle" fill="#9a6700">骨架·逻辑有测试</text>
-<text x="556" y="554.0" font-size="11" font-weight="400" text-anchor="start" fill="#57606a">门控逻辑完整；Tag 实物与外参未冻结</text>
-<text x="1192" y="554.0" font-size="10.5" font-weight="400" text-anchor="end" fill="#1a7f37" font-family="ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace">11 条单元测试</text>
+<text x="48" y="554.0" font-size="12" font-weight="600" text-anchor="start" fill="#1f2328">hr_perception 视觉识别</text>
+<rect x="430" y="538" width="95" height="22" rx="11" fill="#ddf4ff" stroke="#1a73e8" stroke-width="1.2"/>
+<text x="477.5" y="553.0" font-size="10.5" font-weight="700" text-anchor="middle" fill="#1a73e8">已实现·有测试</text>
+<text x="556" y="554.0" font-size="11" font-weight="400" text-anchor="start" fill="#57606a">CPU YOLO 跑通；正式方案为 RKNN，未转换</text>
+<text x="1192" y="554.0" font-size="10.5" font-weight="400" text-anchor="end" fill="#1a7f37" font-family="ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace">流水线校验</text>
 <line x1="32" y1="568" x2="1208" y2="568" stroke="#e7ebef" stroke-width="1"/>
 <text x="48" y="592.0" font-size="12" font-weight="600" text-anchor="start" fill="#1f2328">hr_depth_obstacle 深度障碍</text>
 <rect x="430" y="576" width="107" height="22" rx="11" fill="#fff8c5" stroke="#9a6700" stroke-width="1.2"/>
@@ -109,10 +109,10 @@
 <text x="1192" y="668.0" font-size="10.5" font-weight="400" text-anchor="end" fill="#57606a">—</text>
 <line x1="32" y1="682" x2="1208" y2="682" stroke="#e7ebef" stroke-width="1"/>
 <rect x="32" y="682" width="1176" height="38" rx="4" fill="#fbfcfd" stroke="#fbfcfd" stroke-width="0"/>
-<text x="48" y="706.0" font-size="12" font-weight="600" text-anchor="start" fill="#1f2328">Collision Monitor 停止区</text>
+<text x="48" y="706.0" font-size="12" font-weight="600" text-anchor="start" fill="#1f2328">Collision Monitor 停止区尺寸</text>
 <rect x="430" y="690" width="59" height="22" rx="11" fill="#ffebe9" stroke="#cf222e" stroke-width="1.2"/>
 <text x="459.5" y="705.0" font-size="10.5" font-weight="700" text-anchor="middle" fill="#cf222e">缺件阻塞</text>
-<text x="556" y="706.0" font-size="11" font-weight="400" text-anchor="start" fill="#57606a">停止区多边形仍为空 —— 待实测制动距离后才能冻结</text>
+<text x="556" y="706.0" font-size="11" font-weight="400" text-anchor="start" fill="#57606a">已能启动，但尺寸仍是占位值 —— 待实测制动距离冻结</text>
 <text x="1192" y="706.0" font-size="10.5" font-weight="400" text-anchor="end" fill="#57606a">—</text>
 <line x1="32" y1="720" x2="1208" y2="720" stroke="#e7ebef" stroke-width="1"/>
 <text x="48" y="744.0" font-size="12" font-weight="600" text-anchor="start" fill="#1f2328">Orbbec Gemini 2 接入</text>
@@ -125,7 +125,7 @@
 <text x="48" y="782.0" font-size="12" font-weight="600" text-anchor="start" fill="#1f2328">6轴机械臂 + 末端 D435i 实物</text>
 <rect x="430" y="766" width="59" height="22" rx="11" fill="#ffebe9" stroke="#cf222e" stroke-width="1.2"/>
 <text x="459.5" y="781.0" font-size="10.5" font-weight="700" text-anchor="middle" fill="#cf222e">缺件阻塞</text>
-<text x="556" y="782.0" font-size="11" font-weight="400" text-anchor="start" fill="#57606a">机械臂、舵机控制器、D435i 三者均未到位</text>
+<text x="556" y="782.0" font-size="11" font-weight="400" text-anchor="start" fill="#57606a">机械臂、舵机控制器、D435i、充电桩均未到位</text>
 <text x="1192" y="782.0" font-size="10.5" font-weight="400" text-anchor="end" fill="#57606a">—</text>
 <line x1="32" y1="796" x2="1208" y2="796" stroke="#e7ebef" stroke-width="1"/>
 <rect x="32" y="814" width="1176" height="72" rx="8" fill="#fff8e5" stroke="#d4a72c" stroke-width="1.2"/>
