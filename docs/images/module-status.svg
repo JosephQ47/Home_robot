@@ -1,0 +1,115 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1240 794" width="1240" height="794" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans CJK SC', 'Source Han Sans SC', 'Microsoft YaHei', Helvetica, Arial, sans-serif" role="img">
+<rect width="1240" height="794" rx="10" fill="#ffffff"/>
+<text x="32" y="44" font-size="23" font-weight="700" fill="#1f2328">模块成熟度 · 实测与未实测分开记</text>
+<text x="32" y="70" font-size="13.5" fill="#57606a">「能跑」不是验收结论。下表把实机验收过的能力、只有单元测试的代码和还在等硬件的部分分开陈述</text>
+<rect x="32" y="86" width="59" height="26" rx="13" fill="#dafbe1" stroke="#1a7f37" stroke-width="1.3"/>
+<text x="61.5" y="103.0" font-size="11.5" font-weight="700" text-anchor="middle" fill="#1a7f37">实测通过</text>
+<rect x="103" y="86" width="95" height="26" rx="13" fill="#ddf4ff" stroke="#1a73e8" stroke-width="1.3"/>
+<text x="150.5" y="103.0" font-size="11.5" font-weight="700" text-anchor="middle" fill="#1a73e8">已实现·有测试</text>
+<rect x="210" y="86" width="107" height="26" rx="13" fill="#fff8c5" stroke="#9a6700" stroke-width="1.3"/>
+<text x="263.5" y="103.0" font-size="11.5" font-weight="700" text-anchor="middle" fill="#9a6700">骨架·逻辑有测试</text>
+<rect x="329" y="86" width="47" height="26" rx="13" fill="#eaeef2" stroke="#57606a" stroke-width="1.3"/>
+<text x="352.5" y="103.0" font-size="11.5" font-weight="700" text-anchor="middle" fill="#57606a">仅配置</text>
+<rect x="388" y="86" width="59" height="26" rx="13" fill="#ffebe9" stroke="#cf222e" stroke-width="1.3"/>
+<text x="417.5" y="103.0" font-size="11.5" font-weight="700" text-anchor="middle" fill="#cf222e">缺件阻塞</text>
+<rect x="32" y="124" width="1176" height="24" rx="6" fill="#f6f8fa" stroke="#d0d7de" stroke-width="1"/>
+<text x="48" y="140.0" font-size="11" font-weight="700" text-anchor="start" fill="#57606a">模块</text>
+<text x="430" y="140.0" font-size="11" font-weight="700" text-anchor="start" fill="#57606a">状态</text>
+<text x="556" y="140.0" font-size="11" font-weight="700" text-anchor="start" fill="#57606a">当前到哪一步 / 卡在哪</text>
+<text x="1192" y="140.0" font-size="11" font-weight="700" text-anchor="end" fill="#57606a">自动化验证</text>
+<rect x="32" y="150" width="1176" height="38" rx="4" fill="#fbfcfd" stroke="#fbfcfd" stroke-width="0"/>
+<text x="48" y="174.0" font-size="12" font-weight="600" text-anchor="start" fill="#1f2328">STM32 四轮闭环 + 安全链</text>
+<rect x="430" y="158" width="59" height="22" rx="11" fill="#dafbe1" stroke="#1a7f37" stroke-width="1.2"/>
+<text x="459.5" y="173.0" font-size="10.5" font-weight="700" text-anchor="middle" fill="#1a7f37">实测通过</text>
+<text x="556" y="174.0" font-size="11" font-weight="400" text-anchor="start" fill="#57606a">真实制动 / 急停 / 断链停车 / 过流保护均已实机验收</text>
+<text x="1192" y="174.0" font-size="10.5" font-weight="400" text-anchor="end" fill="#57606a">—</text>
+<line x1="32" y1="188" x2="1208" y2="188" stroke="#e7ebef" stroke-width="1"/>
+<text x="48" y="212.0" font-size="12" font-weight="600" text-anchor="start" fill="#1f2328">hr_bridge 上下位机协议</text>
+<rect x="430" y="196" width="59" height="22" rx="11" fill="#dafbe1" stroke="#1a7f37" stroke-width="1.2"/>
+<text x="459.5" y="211.0" font-size="10.5" font-weight="700" text-anchor="middle" fill="#1a7f37">实测通过</text>
+<text x="556" y="212.0" font-size="11" font-weight="400" text-anchor="start" fill="#57606a">CRC / 序号 / 断链重连实测；/battery_state 待下位机电池帧</text>
+<text x="1192" y="212.0" font-size="10.5" font-weight="400" text-anchor="end" fill="#1a7f37" font-family="ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace">回环·丢帧·乱序</text>
+<line x1="32" y1="226" x2="1208" y2="226" stroke="#e7ebef" stroke-width="1"/>
+<rect x="32" y="226" width="1176" height="38" rx="4" fill="#fbfcfd" stroke="#fbfcfd" stroke-width="0"/>
+<text x="48" y="250.0" font-size="12" font-weight="600" text-anchor="start" fill="#1f2328">hr_motion_mux 速度仲裁</text>
+<rect x="430" y="234" width="95" height="22" rx="11" fill="#ddf4ff" stroke="#1a73e8" stroke-width="1.2"/>
+<text x="477.5" y="249.0" font-size="10.5" font-weight="700" text-anchor="middle" fill="#1a73e8">已实现·有测试</text>
+<text x="556" y="250.0" font-size="11" font-weight="400" text-anchor="start" fill="#57606a">运行时验收 /cmd_vel_auto publisher 恰为 1；待与真实 Nav2 联调</text>
+<text x="1192" y="250.0" font-size="10.5" font-weight="400" text-anchor="end" fill="#1a7f37" font-family="ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace">12 条单元测试</text>
+<line x1="32" y1="264" x2="1208" y2="264" stroke="#e7ebef" stroke-width="1"/>
+<text x="48" y="288.0" font-size="12" font-weight="600" text-anchor="start" fill="#1f2328">hr_task_manager 任务编排</text>
+<rect x="430" y="272" width="95" height="22" rx="11" fill="#ddf4ff" stroke="#1a73e8" stroke-width="1.2"/>
+<text x="477.5" y="287.0" font-size="10.5" font-weight="700" text-anchor="middle" fill="#1a73e8">已实现·有测试</text>
+<text x="556" y="288.0" font-size="11" font-weight="400" text-anchor="start" fill="#57606a">已支持 DOCKING 阶段与授权续发；低电回充分支待电池数据</text>
+<text x="1192" y="288.0" font-size="10.5" font-weight="400" text-anchor="end" fill="#1a7f37" font-family="ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace">生命周期测试</text>
+<line x1="32" y1="302" x2="1208" y2="302" stroke="#e7ebef" stroke-width="1"/>
+<rect x="32" y="302" width="1176" height="38" rx="4" fill="#fbfcfd" stroke="#fbfcfd" stroke-width="0"/>
+<text x="48" y="326.0" font-size="12" font-weight="600" text-anchor="start" fill="#1f2328">hr_web_ui 网页控制台</text>
+<rect x="430" y="310" width="95" height="22" rx="11" fill="#ddf4ff" stroke="#1a73e8" stroke-width="1.2"/>
+<text x="477.5" y="325.0" font-size="10.5" font-weight="700" text-anchor="middle" fill="#1a73e8">已实现·有测试</text>
+<text x="556" y="326.0" font-size="11" font-weight="400" text-anchor="start" fill="#57606a">前后端跑通，Mock / ROS 双适配器</text>
+<text x="1192" y="326.0" font-size="10.5" font-weight="400" text-anchor="end" fill="#1a7f37" font-family="ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace">后端单元测试</text>
+<line x1="32" y1="340" x2="1208" y2="340" stroke="#e7ebef" stroke-width="1"/>
+<text x="48" y="364.0" font-size="12" font-weight="600" text-anchor="start" fill="#1f2328">hr_perception 视觉识别</text>
+<rect x="430" y="348" width="95" height="22" rx="11" fill="#ddf4ff" stroke="#1a73e8" stroke-width="1.2"/>
+<text x="477.5" y="363.0" font-size="10.5" font-weight="700" text-anchor="middle" fill="#1a73e8">已实现·有测试</text>
+<text x="556" y="364.0" font-size="11" font-weight="400" text-anchor="start" fill="#57606a">CPU YOLO 跑通；正式方案为 RKNN，未转换</text>
+<text x="1192" y="364.0" font-size="10.5" font-weight="400" text-anchor="end" fill="#1a7f37" font-family="ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace">流水线校验</text>
+<line x1="32" y1="378" x2="1208" y2="378" stroke="#e7ebef" stroke-width="1"/>
+<rect x="32" y="378" width="1176" height="38" rx="4" fill="#fbfcfd" stroke="#fbfcfd" stroke-width="0"/>
+<text x="48" y="402.0" font-size="12" font-weight="600" text-anchor="start" fill="#1f2328">hr_docking AprilTag 定位</text>
+<rect x="430" y="386" width="107" height="22" rx="11" fill="#fff8c5" stroke="#9a6700" stroke-width="1.2"/>
+<text x="483.5" y="401.0" font-size="10.5" font-weight="700" text-anchor="middle" fill="#9a6700">骨架·逻辑有测试</text>
+<text x="556" y="402.0" font-size="11" font-weight="400" text-anchor="start" fill="#57606a">门控逻辑完整；Tag 实物、外参与 opennav_docking 均未到位</text>
+<text x="1192" y="402.0" font-size="10.5" font-weight="400" text-anchor="end" fill="#1a7f37" font-family="ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace">11 条单元测试</text>
+<line x1="32" y1="416" x2="1208" y2="416" stroke="#e7ebef" stroke-width="1"/>
+<text x="48" y="440.0" font-size="12" font-weight="600" text-anchor="start" fill="#1f2328">hr_depth_obstacle 深度障碍</text>
+<rect x="430" y="424" width="107" height="22" rx="11" fill="#fff8c5" stroke="#9a6700" stroke-width="1.2"/>
+<text x="483.5" y="439.0" font-size="10.5" font-weight="700" text-anchor="middle" fill="#9a6700">骨架·逻辑有测试</text>
+<text x="556" y="440.0" font-size="11" font-weight="400" text-anchor="start" fill="#57606a">门控与地面滤除完整；阈值待 Gemini 2 实测冻结</text>
+<text x="1192" y="440.0" font-size="10.5" font-weight="400" text-anchor="end" fill="#1a7f37" font-family="ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace">11 条单元测试</text>
+<line x1="32" y1="454" x2="1208" y2="454" stroke="#e7ebef" stroke-width="1"/>
+<rect x="32" y="454" width="1176" height="38" rx="4" fill="#fbfcfd" stroke="#fbfcfd" stroke-width="0"/>
+<text x="48" y="478.0" font-size="12" font-weight="600" text-anchor="start" fill="#1f2328">hr_arm_controller 抓取状态机</text>
+<rect x="430" y="462" width="107" height="22" rx="11" fill="#fff8c5" stroke="#9a6700" stroke-width="1.2"/>
+<text x="483.5" y="477.0" font-size="10.5" font-weight="700" text-anchor="middle" fill="#9a6700">骨架·逻辑有测试</text>
+<text x="556" y="478.0" font-size="11" font-weight="400" text-anchor="start" fill="#57606a">安全互锁完整；IK 与舵机驱动未实现</text>
+<text x="1192" y="478.0" font-size="10.5" font-weight="400" text-anchor="end" fill="#1a7f37" font-family="ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace">12 条单元测试</text>
+<line x1="32" y1="492" x2="1208" y2="492" stroke="#e7ebef" stroke-width="1"/>
+<text x="48" y="516.0" font-size="12" font-weight="600" text-anchor="start" fill="#1f2328">hr_voice_command 语音意图</text>
+<rect x="430" y="500" width="107" height="22" rx="11" fill="#fff8c5" stroke="#9a6700" stroke-width="1.2"/>
+<text x="483.5" y="515.0" font-size="10.5" font-weight="700" text-anchor="middle" fill="#9a6700">骨架·逻辑有测试</text>
+<text x="556" y="516.0" font-size="11" font-weight="400" text-anchor="start" fill="#57606a">白名单映射与拒绝策略完整；麦克风与 ASR 未选型</text>
+<text x="1192" y="516.0" font-size="10.5" font-weight="400" text-anchor="end" fill="#1a7f37" font-family="ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace">12 条单元测试</text>
+<line x1="32" y1="530" x2="1208" y2="530" stroke="#e7ebef" stroke-width="1"/>
+<rect x="32" y="530" width="1176" height="38" rx="4" fill="#fbfcfd" stroke="#fbfcfd" stroke-width="0"/>
+<text x="48" y="554.0" font-size="12" font-weight="600" text-anchor="start" fill="#1f2328">Nav2 导航栈</text>
+<rect x="430" y="538" width="47" height="22" rx="11" fill="#eaeef2" stroke="#57606a" stroke-width="1.2"/>
+<text x="453.5" y="553.0" font-size="10.5" font-weight="700" text-anchor="middle" fill="#57606a">仅配置</text>
+<text x="556" y="554.0" font-size="11" font-weight="400" text-anchor="start" fill="#57606a">参数骨架就位，缺已验收地图，未实机跑通</text>
+<text x="1192" y="554.0" font-size="10.5" font-weight="400" text-anchor="end" fill="#57606a">—</text>
+<line x1="32" y1="568" x2="1208" y2="568" stroke="#e7ebef" stroke-width="1"/>
+<text x="48" y="592.0" font-size="12" font-weight="600" text-anchor="start" fill="#1f2328">Collision Monitor 停止区</text>
+<rect x="430" y="576" width="59" height="22" rx="11" fill="#ffebe9" stroke="#cf222e" stroke-width="1.2"/>
+<text x="459.5" y="591.0" font-size="10.5" font-weight="700" text-anchor="middle" fill="#cf222e">缺件阻塞</text>
+<text x="556" y="592.0" font-size="11" font-weight="400" text-anchor="start" fill="#57606a">停止区多边形仍为空 —— 待实测制动距离后才能冻结</text>
+<text x="1192" y="592.0" font-size="10.5" font-weight="400" text-anchor="end" fill="#57606a">—</text>
+<line x1="32" y1="606" x2="1208" y2="606" stroke="#e7ebef" stroke-width="1"/>
+<rect x="32" y="606" width="1176" height="38" rx="4" fill="#fbfcfd" stroke="#fbfcfd" stroke-width="0"/>
+<text x="48" y="630.0" font-size="12" font-weight="600" text-anchor="start" fill="#1f2328">Orbbec Gemini 2 接入</text>
+<rect x="430" y="614" width="59" height="22" rx="11" fill="#ffebe9" stroke="#cf222e" stroke-width="1.2"/>
+<text x="459.5" y="629.0" font-size="10.5" font-weight="700" text-anchor="middle" fill="#cf222e">缺件阻塞</text>
+<text x="556" y="630.0" font-size="11" font-weight="400" text-anchor="start" fill="#57606a">方案已改为 Gemini 2，实物未接入；当前为 RTSP 调试取流</text>
+<text x="1192" y="630.0" font-size="10.5" font-weight="400" text-anchor="end" fill="#57606a">—</text>
+<line x1="32" y1="644" x2="1208" y2="644" stroke="#e7ebef" stroke-width="1"/>
+<text x="48" y="668.0" font-size="12" font-weight="600" text-anchor="start" fill="#1f2328">6轴机械臂 + 末端 D435i</text>
+<rect x="430" y="652" width="59" height="22" rx="11" fill="#ffebe9" stroke="#cf222e" stroke-width="1.2"/>
+<text x="459.5" y="667.0" font-size="10.5" font-weight="700" text-anchor="middle" fill="#cf222e">缺件阻塞</text>
+<text x="556" y="668.0" font-size="11" font-weight="400" text-anchor="start" fill="#57606a">机械臂、舵机控制器、D435i 三者均未到位</text>
+<text x="1192" y="668.0" font-size="10.5" font-weight="400" text-anchor="end" fill="#57606a">—</text>
+<line x1="32" y1="682" x2="1208" y2="682" stroke="#e7ebef" stroke-width="1"/>
+<rect x="32" y="700" width="1176" height="72" rx="8" fill="#fff8e5" stroke="#d4a72c" stroke-width="1.2"/>
+<text x="48" y="722.0" font-size="11.5" font-weight="700" text-anchor="start" fill="#1f2328">这张表为什么这么写</text>
+<text x="48" y="744.0" font-size="10.8" font-weight="400" text-anchor="start" fill="#57606a">项目规范里有一条硬约束：验收标准必须可判定，证据必须落盘。「能跑」「实测正常」不算数，ros2 topic hz 的数字、colcon test-result 的输出、bag 文件才算。</text>
+<text x="48" y="761.0" font-size="10.8" font-weight="400" text-anchor="start" fill="#57606a">所以上面没有进度百分比，只有「这一条有没有可复现的证据」。缺件阻塞的行不会因为代码写完了就变绿 —— 它要等硬件、等标定、等实测数值。</text>
+</svg>

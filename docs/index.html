@@ -1,0 +1,448 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>家庭服务机器人 · Home Robot</title>
+<meta name="description" content="RK3588 + STM32F407 双控分层架构的家庭服务机器人：ROS 2 Humble、四轮差速底盘、自主导航与 AprilTag 回充，核心是一条 fail-closed 的自动速度安全链。">
+<style>
+  :root {
+    --bg: #ffffff;
+    --bg-soft: #f6f8fa;
+    --ink: #1f2328;
+    --muted: #57606a;
+    --line: #d8dee4;
+    --accent: #1a73e8;
+    --accent-soft: #e3eefc;
+    --danger: #c5221f;
+    --danger-soft: #fce8e6;
+    --ok: #1a7f37;
+    --ok-soft: #dafbe1;
+    --warn: #9a6700;
+    --warn-soft: #fff8c5;
+    --shadow: 0 1px 3px rgba(31, 35, 40, .08), 0 8px 24px rgba(31, 35, 40, .06);
+    --radius: 12px;
+    --maxw: 1180px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0d1117;
+      --bg-soft: #161b22;
+      --ink: #e6edf3;
+      --muted: #9198a1;
+      --line: #30363d;
+      --accent: #58a6ff;
+      --accent-soft: #10243e;
+      --danger: #f85149;
+      --danger-soft: #2d1416;
+      --ok: #3fb950;
+      --ok-soft: #10281a;
+      --warn: #d29922;
+      --warn-soft: #2c2213;
+      --shadow: 0 1px 3px rgba(1, 4, 9, .4), 0 8px 24px rgba(1, 4, 9, .3);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0d1117; --bg-soft: #161b22; --ink: #e6edf3; --muted: #9198a1;
+    --line: #30363d; --accent: #58a6ff; --accent-soft: #10243e;
+    --danger: #f85149; --danger-soft: #2d1416; --ok: #3fb950; --ok-soft: #10281a;
+    --warn: #d29922; --warn-soft: #2c2213;
+    --shadow: 0 1px 3px rgba(1, 4, 9, .4), 0 8px 24px rgba(1, 4, 9, .3);
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font: 16px/1.72 -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans CJK SC",
+          "Source Han Sans SC", "Microsoft YaHei", Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: var(--maxw); margin: 0 auto; padding: 0 16px; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code, .mono {
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+    font-size: .92em;
+  }
+  code { background: var(--bg-soft); padding: .12em .38em; border-radius: 5px; }
+
+  header.top {
+    position: sticky; top: 0; z-index: 20; background: color-mix(in srgb, var(--bg) 88%, transparent);
+    backdrop-filter: blur(10px); border-bottom: 1px solid var(--line);
+  }
+  .nav { display: flex; align-items: center; gap: 22px; height: 58px; }
+  .brand { font-weight: 700; letter-spacing: .2px; margin-right: auto; }
+  .nav a.link { color: var(--muted); font-size: 14.5px; }
+  .nav a.link:hover { color: var(--ink); text-decoration: none; }
+  .theme-btn {
+    border: 1px solid var(--line); background: var(--bg-soft); color: var(--muted);
+    border-radius: 7px; height: 32px; padding: 0 11px; cursor: pointer; font-size: 13px;
+  }
+  .theme-btn:hover { color: var(--ink); }
+
+  .hero { padding: 68px 0 44px; }
+  .hero h1 { font-size: clamp(30px, 5vw, 46px); line-height: 1.22; margin: 0 0 14px; letter-spacing: -.5px; }
+  .hero .sub { font-size: clamp(16px, 2vw, 19px); color: var(--muted); max-width: 48em; margin: 0 0 26px; }
+  .badges { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 28px; }
+  .badge {
+    font-size: 12.5px; padding: 5px 11px; border-radius: 999px;
+    background: var(--bg-soft); border: 1px solid var(--line); color: var(--muted);
+  }
+  .badge.on { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+  .cta { display: flex; flex-wrap: wrap; gap: 11px; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 7px; height: 42px; padding: 0 18px;
+    border-radius: 9px; font-size: 14.5px; font-weight: 600; border: 1px solid var(--line);
+    background: var(--bg-soft); color: var(--ink);
+  }
+  .btn:hover { text-decoration: none; border-color: var(--muted); }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .btn.primary:hover { filter: brightness(1.08); }
+
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 14px; margin: 40px 0 0; }
+  .stat { background: var(--bg-soft); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px 18px; }
+  .stat .n { font-size: 27px; font-weight: 700; line-height: 1.2; }
+  .stat .l { font-size: 13px; color: var(--muted); margin-top: 3px; }
+
+  section { padding: 56px 0; border-top: 1px solid var(--line); }
+  section > .wrap > h2 { font-size: clamp(22px, 3vw, 29px); margin: 0 0 10px; letter-spacing: -.3px; }
+  section > .wrap > .lede { color: var(--muted); max-width: 52em; margin: 0 0 30px; }
+
+  .figure {
+    background: var(--bg-soft); border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 14px; box-shadow: var(--shadow); margin: 0 0 14px;
+  }
+  .figure img { display: block; width: 100%; height: auto; border-radius: 7px; background: #fff; }
+  .caption { font-size: 13.5px; color: var(--muted); margin: 0 0 30px; }
+
+  .pull {
+    border-left: 3px solid var(--accent); background: var(--accent-soft);
+    padding: 15px 20px; border-radius: 0 9px 9px 0; margin: 0 0 28px;
+    font-size: 17px; color: var(--ink);
+  }
+
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(270px, 1fr)); gap: 16px; }
+  .card {
+    background: var(--bg-soft); border: 1px solid var(--line);
+    border-radius: var(--radius); padding: 20px;
+  }
+  .card h3 { margin: 0 0 8px; font-size: 16.5px; }
+  .card p { margin: 0; color: var(--muted); font-size: 14.5px; }
+  .card .tag {
+    display: inline-block; font-size: 11.5px; font-weight: 700; padding: 2px 9px;
+    border-radius: 999px; margin-bottom: 9px;
+  }
+  .tag.ok { background: var(--ok-soft); color: var(--ok); }
+  .tag.warn { background: var(--warn-soft); color: var(--warn); }
+  .tag.danger { background: var(--danger-soft); color: var(--danger); }
+  .tag.info { background: var(--accent-soft); color: var(--accent); }
+
+  .shots { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+  .shot { background: var(--bg-soft); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+  .shot img { display: block; width: 100%; height: auto; }
+  .shot .cap { padding: 11px 14px; font-size: 13.5px; color: var(--muted); }
+  .shot.wide { grid-column: 1 / -1; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 14.5px; }
+  th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--muted); font-size: 13px; font-weight: 700; }
+  .table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius); }
+
+  pre {
+    background: var(--bg-soft); border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 16px 18px; overflow-x: auto; font-size: 13.5px; line-height: 1.66;
+  }
+  pre code { background: none; padding: 0; }
+
+  footer { padding: 40px 0 56px; border-top: 1px solid var(--line); color: var(--muted); font-size: 14px; }
+
+  @media (max-width: 640px) {
+    .hero { padding: 44px 0 32px; }
+    .nav { gap: 14px; }
+    .nav a.link { display: none; }
+    section { padding: 40px 0; }
+  }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap nav">
+    <span class="brand">家庭服务机器人</span>
+    <a class="link" href="#safety">安全链</a>
+    <a class="link" href="#arch">架构</a>
+    <a class="link" href="#lower">下位机</a>
+    <a class="link" href="#web">控制台</a>
+    <a class="link" href="#status">进展</a>
+    <button class="theme-btn" id="themeBtn" type="button">切换主题</button>
+  </div>
+</header>
+
+<div class="wrap hero">
+  <h1>让每一条自动速度<br>都只有一条路可走</h1>
+  <p class="sub">
+    RK3588 + STM32F407 双控分层架构的家庭服务机器人。ROS 2 Humble、四轮差速底盘、
+    RPLIDAR S3 导航、Gemini 2 深度感知、AprilTag 自主回充。
+    工程主线不是「跑得多快」，而是让速度链上的每一道闸坏掉时都朝停车的方向失效。
+  </p>
+  <div class="badges">
+    <span class="badge on">ROS 2 Humble</span>
+    <span class="badge on">Nav2</span>
+    <span class="badge">STM32F407 · FreeRTOS</span>
+    <span class="badge">RK3588</span>
+    <span class="badge">Ubuntu 22.04</span>
+    <span class="badge">Python 3.10</span>
+    <span class="badge">robot_localization EKF</span>
+    <span class="badge">SLAM Toolbox</span>
+    <span class="badge">OpenNav Docking</span>
+  </div>
+  <div class="cta">
+    <a class="btn primary" href="https://github.com/JosephQ47/Home_robot">在 GitHub 上查看</a>
+    <a class="btn" href="https://github.com/JosephQ47/Home_robot/blob/main/家庭服务机器人技术方案.md">技术方案全文</a>
+    <a class="btn" href="https://github.com/JosephQ47/Home_robot/tree/main/docs/features">功能设计文档</a>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><div class="n">22</div><div class="l">ROS 2 包</div></div>
+    <div class="stat"><div class="n">58</div><div class="l">安全规则单元测试</div></div>
+    <div class="stat"><div class="n">5</div><div class="l">架构分层</div></div>
+    <div class="stat"><div class="n">4</div><div class="l">FreeRTOS 任务</div></div>
+    <div class="stat"><div class="n">1</div><div class="l">最终速度发布者</div></div>
+  </div>
+</div>
+
+<section id="safety">
+  <div class="wrap">
+    <h2>问题：谁有权让轮子转</h2>
+    <p class="lede">
+      家用移动机器人最容易出事的地方，不是路径规划不够聪明。
+      一个节点崩了，最后一条速度命令还留在总线上；两个规划器同时发速度，底盘收到交替命令；
+      为了顺利对上充电桩，有人把避障停止区关小了——这三件事都足以让机器在家里撞到人。
+    </p>
+    <p class="pull">
+      所以整个项目围绕一条不变量组织：<strong>任何自动速度都只有一条路可走，
+      且这条路上每一道闸坏掉时都朝停车的方向失效。</strong>
+    </p>
+    <div class="figure">
+      <img src="images/velocity-chain.svg" alt="自动速度安全链：Nav2 与 OpenNav Docking 的速度经 hr_motion_mux 互斥仲裁，再经 Collision Monitor 一票否决，最后由 STM32 执行">
+    </div>
+    <p class="caption">
+      两个规划器都可以「提议」速度，但只有 <code>hr_motion_mux</code> 决定谁的提议生效；
+      Collision Monitor 行使一票否决；而 STM32 对这两者都不信任——上位机整体失联 150 ms 后，它自己把车停住。
+    </p>
+
+    <div class="cards">
+      <div class="card">
+        <span class="tag info">互斥仲裁</span>
+        <h3>hr_motion_mux</h3>
+        <p>按任务阶段在 Nav2 与 Docking 之间互斥选择，切换先强制归零 300 ms，
+           任一源过期立即归零。<code>/cmd_vel_auto</code> 的 publisher 有且仅有它一个。</p>
+      </div>
+      <div class="card">
+        <span class="tag danger">一票否决</span>
+        <h3>Collision Monitor</h3>
+        <p>基于最新 <code>/scan</code> 的激光停止区。回充速度同样走这条链——
+           为了对接成功而关小停止区属于禁止项，只能回去改充电桩机械设计。</p>
+      </div>
+      <div class="card">
+        <span class="tag ok">物理权威</span>
+        <h3>STM32F407</h3>
+        <p>命令超时 150 ms 归零，SBUS 人工接管优先于自动控制且不依赖上位机存活。
+           限速、斜坡、限流和 H 桥输出只由它决定。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="arch">
+  <div class="wrap">
+    <h2>五层架构</h2>
+    <p class="lede">
+      分层的判据是<strong>职责能不能被抢走</strong>：上位机可以崩、可以卡、可以被 Wi-Fi 断开，
+      但都不能影响 SBUS 人工接管和硬件急停。
+    </p>
+    <div class="figure">
+      <img src="images/architecture.svg" alt="五层系统架构：业务任务层、感知与规划层、通信与接口层、实时控制与安全层、驱动与执行层">
+    </div>
+    <p class="caption">上位机负责「想去哪」，下位机负责「现在准不准动」。</p>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>类别</th><th>选型</th><th>职责</th></tr></thead>
+        <tbody>
+          <tr><td>上位机</td><td>野火鲁班猫 5（RK3588，8 GB + 64 GB）</td><td>视觉、SLAM、导航、任务编排</td></tr>
+          <tr><td>深度相机</td><td>Orbbec Gemini 2</td><td>RGB + 深度 + 点云；三维测距、高低障碍、AprilTag</td></tr>
+          <tr><td>激光雷达</td><td>RPLIDAR S3</td><td>SLAM、定位、二维避障、停止区主观测</td></tr>
+          <tr><td>下位机</td><td>STM32F407VET6 + FreeRTOS</td><td>实时控制、编码器、状态估计、安全监控</td></tr>
+          <tr><td>执行器</td><td>4× MC520P30_12V 有刷减速编码器电机</td><td>30:1、1560 count/rev（四倍频）</td></tr>
+          <tr><td>功率级</td><td>4× VNH5019A-E 独立全桥</td><td>20 kHz PWM、过流/过温硬件保护</td></tr>
+          <tr><td>人工接管</td><td>HT-10A + SBUS 接收机</td><td><strong>不经过上位机</strong>的接管与急停</td></tr>
+          <tr><td>电池与回充</td><td>带 BMS 电池包 + AprilTag 充电桩</td><td>低电分级、自主回充、充电真实性确认</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section id="lower">
+  <div class="wrap">
+    <h2>下位机：四个任务，和它们拒绝共享的东西</h2>
+    <p class="lede">
+      任务边界按<strong>「谁拥有哪份数据」</strong>划分，而不是按功能大小。
+      没有第二个任务能写别人的数据，所以也不需要互斥锁去争它。
+    </p>
+    <div class="figure">
+      <img src="images/freertos-tasks.svg" alt="STM32 FreeRTOS 四任务：command_task、chassis_task、imu_task、monitor_task 及其隔离边界与看门狗策略">
+    </div>
+    <p class="caption">
+      看门狗在这里是<strong>软件存活门</strong>而不是定时器：<code>monitor_task</code> 只有确认
+      另外三个任务都按期报到，才去喂 IWDG。任何一个被监控任务挂死，结果是复位，
+      而不是带着一个死任务继续跑。
+    </p>
+  </div>
+</section>
+
+<section id="web">
+  <div class="wrap">
+    <h2>网页控制台</h2>
+    <p class="lede">
+      局域网内手机和电脑都能用。设计边界很硬：<strong>网页只能创建和取消离散任务，
+      不提供任何摇杆或速度直通接口。</strong>远程遥控一个看不见的机器人是危险的，
+      所以这条路径从一开始就没有留。
+    </p>
+    <div class="shots">
+      <div class="shot wide">
+        <img src="images/web/dashboard-task-dispatch.png" alt="网页控制台桌面端：选择地图、区域、目标类别与任务模式后发布任务，任务队列实时显示执行中">
+        <div class="cap">发布一个「厨房垃圾桶巡检 · 跟随」任务后，任务队列实时转为「执行中」。</div>
+      </div>
+      <div class="shot">
+        <img src="images/web/dashboard-targets.png" alt="目标记录：识别置信度与雷达关联结果">
+        <div class="cap">目标记录：无雷达关联的目标只能「仅观察」，不能进入跟随。</div>
+      </div>
+      <div class="shot">
+        <img src="images/web/dashboard-logs.png" alt="运行日志视图">
+        <div class="cap">运行日志：任务与安全事件可追溯。</div>
+      </div>
+      <div class="shot">
+        <img src="images/web/dashboard-mobile.png" alt="移动端任务发布界面">
+        <div class="cap">移动端 · 任务发布。</div>
+      </div>
+      <div class="shot">
+        <img src="images/web/dashboard-mobile-tasks.png" alt="移动端任务队列">
+        <div class="cap">移动端 · 任务队列。</div>
+      </div>
+      <div class="shot">
+        <img src="images/web/dashboard-wifi.png" alt="Wi-Fi 配网对话框">
+        <div class="cap">Wi-Fi 配网。</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="status">
+  <div class="wrap">
+    <h2>现在到哪一步了</h2>
+    <p class="lede">
+      这张表没有进度百分比，只有「这一条有没有可复现的证据」。
+      项目规范里有一条硬约束：验收标准必须可判定，证据必须落盘——
+      「能跑」不算数，<code>ros2 topic hz</code> 的数字、<code>colcon test-result</code> 的输出、bag 文件才算。
+    </p>
+    <div class="figure">
+      <img src="images/module-status.svg" alt="模块成熟度矩阵：区分实测通过、已实现有测试、骨架、仅配置和缺件阻塞五种状态">
+    </div>
+
+    <h3>一个具体例子</h3>
+    <p style="color: var(--muted); max-width: 52em;">
+      <code>hr_motion_mux</code> 的运行时验收发现了 <code>hr_task_manager</code> 的一个真实缺陷：
+      它只在状态迁移时发布一次阶段授权，而 mux 把阶段当作<strong>会过期的授权</strong>处理，
+      于是导航开始 1 秒后底盘就被归零。
+    </p>
+    <p style="color: var(--muted); max-width: 52em;">
+      修法是让任务管理器持续续发授权，而不是放宽 mux 的超时——
+      放宽超时等于让一个已经死掉的任务管理器继续授权运动。
+    </p>
+  </div>
+</section>
+
+<section id="method">
+  <div class="wrap">
+    <h2>工程方法</h2>
+    <p class="lede">
+      AI 写代码的成本趋近于零，成本转移到了「凭什么相信这段代码是对的」。这个项目用三根支柱回答。
+    </p>
+    <div class="cards">
+      <div class="card">
+        <h3>基准文档</h3>
+        <p>它<em>应该</em>是什么样。约 2200 行的技术方案是唯一权威，
+           先改文档再改代码——顺序反了，一致性检查就成了橡皮图章。</p>
+      </div>
+      <div class="card">
+        <h3>验证证据</h3>
+        <p>它<em>实际</em>是什么样。单元测试写的是<strong>规则</strong>而不是实现：
+           每条测试对应设计文档里一条编号规则，边界按「等于阈值可用、超阈值一个单位即失效」验证。</p>
+      </div>
+      <div class="card">
+        <h3>一致性机制</h3>
+        <p>两者有没有分叉。源文件头部带 <code>@spec</code> 回指标记，
+           追溯表逐条记录代码与方案条款的对应及成熟度。</p>
+      </div>
+    </div>
+
+    <h3 style="margin-top: 32px;">几条自己给自己定的硬规矩</h3>
+    <ul style="color: var(--muted); max-width: 52em;">
+      <li><strong>没有设计文档不许写代码。</strong>接口、行为规则和可判定的验收标准先写清楚，评审通过才开工。</li>
+      <li><strong>同一问题连续 3 次修不好就停手找根因。</strong>不允许连打补丁。</li>
+      <li><strong>不把估算值当实测值。</strong>厂家没有可追溯资料的参数，文档里只写项目运行上限，
+          绝不在简历或答辩中冒充实测结论。</li>
+    </ul>
+  </div>
+</section>
+
+<section id="start">
+  <div class="wrap">
+    <h2>快速开始</h2>
+    <pre><code># 依赖：Ubuntu 22.04 + ROS 2 Humble
+cd upper
+source /opt/ros/humble/setup.bash
+colcon build
+source install/setup.bash
+
+# 安全 Mock 总入口：不连接硬件，不发布任何速度
+ros2 launch hr_bringup mock.launch.py
+
+# 纯逻辑单元测试（不需要 ROS 运行时）
+python3 -m pytest upper/src/hr_motion_mux/test upper/src/hr_docking/test \
+    upper/src/hr_depth_obstacle/test upper/src/hr_arm_controller/test \
+    upper/src/hr_voice_command/test -q</code></pre>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    架构图由仓库内 <code>tools/diagrams/</code> 的脚本生成，可随方案更新一键重绘 ·
+    <a href="https://github.com/JosephQ47/Home_robot">GitHub</a>
+  </div>
+</footer>
+
+<script>
+  (function () {
+    var btn = document.getElementById('themeBtn');
+    var root = document.documentElement;
+    try {
+      var saved = localStorage.getItem('hr-theme');
+      if (saved) root.setAttribute('data-theme', saved);
+    } catch (e) { /* private mode or blocked storage: fall back to the OS preference */ }
+    btn.addEventListener('click', function () {
+      var now = root.getAttribute('data-theme');
+      if (!now) {
+        now = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      }
+      var next = now === 'dark' ? 'light' : 'dark';
+      root.setAttribute('data-theme', next);
+      try { localStorage.setItem('hr-theme', next); } catch (e) { /* nothing to persist to */ }
+    });
+  })();
+</script>
+</body>
+</html>
