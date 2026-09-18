@@ -1,0 +1,7 @@
+# Pending servo controller selection. The controller — not this node — owns
+# joint limits, over-current cutoff and action timeout; see docs/features/hr_arm.md §2.
+hr_arm_driver:
+  ros__parameters:
+    serial_port: ''
+    baudrate: 115200
+    command_timeout_ms: 200

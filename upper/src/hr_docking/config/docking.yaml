@@ -1,0 +1,14 @@
+# OpenNav Docking server parameters. Speeds and tolerances are initial values
+# pending the staged acceptance in docs/features/hr_docking.md §8.
+docking_server:
+  ros__parameters:
+    controller_frequency: 20.0
+    dock_plugins: ['home_dock']
+    docks: ['home_dock']
+    max_retries: 3
+    # Contact alone is not success. Charging is confirmed on /battery_state only.
+    dock_approach_distance: 0.4
+    docking_threshold: 0.02
+    staging_x_offset: -0.6
+    # hr_motion_mux is the only consumer; never remap this to /cmd_vel.
+    cmd_vel_topic: /cmd_vel_dock

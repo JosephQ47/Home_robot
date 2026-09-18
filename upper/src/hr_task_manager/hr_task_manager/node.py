@@ -40,6 +40,15 @@ class TaskManager(Node):
         self.tracker_pub = self.create_publisher(TrackerPolicy, '/task/tracker_policy', 10)
         self.follow_pub = self.create_publisher(FollowPolicy, '/task/follow_policy', 10)
         self.phase_pub = self.create_publisher(MotionPhase, '/task/motion_phase', 10)
+        self.phase_seq = 0
+        # hr_motion_mux treats the phase as an *authorisation*, and an
+        # authorisation that is not renewed expires (MUX-4) — that is what makes
+        # a dead task manager stop the robot instead of leaving it driving.
+        # So the current phase has to be republished as a heartbeat, not only on
+        # transitions. Caught by the runtime check in dev_log: with event-only
+        # publishing the mux zeroed the base one second into every navigation.
+        self.last_phase = None
+        self.create_timer(0.2, self.republish_phase)
         self.create_subscription(RobotStatus, '/robot_status', self.on_robot_status, 10)
         self.create_subscription(Odometry, '/odometry/filtered', self.on_odom, 10)
         self.nav = ActionClient(self, NavigateToPose, '/navigate_to_pose')
@@ -95,11 +104,46 @@ class TaskManager(Node):
         follow.minimum_safe_distance_m = float(
             self.get_parameter('follow_minimum_safe_distance_m').value)
         self.follow_pub.publish(follow)
+        self.last_phase = (self.phase_for(goal, enabled), goal.task_id, phase, not enabled)
+        self.publish_phase(*self.last_phase)
+
+    def publish_phase(self, phase_value, task_id, reason, zero_required):
         motion = MotionPhase()
-        motion.header.stamp, motion.task_id = stamp, goal.task_id
-        motion.phase = MotionPhase.NAVIGATING if enabled else MotionPhase.ZERO
-        motion.reason, motion.zero_required = phase, not enabled
+        motion.header.stamp = self.get_clock().now().to_msg()
+        motion.task_id, motion.reason = task_id, reason
+        motion.phase, motion.zero_required = phase_value, zero_required
+        # hr_motion_mux drops any phase message whose source_seq does not advance,
+        # so this counter must increment on every publish, including repeats.
+        self.phase_seq += 1
+        motion.source_seq = self.phase_seq
         self.phase_pub.publish(motion)
+
+    def republish_phase(self):
+        """Renew the current authorisation so hr_motion_mux keeps honouring it.
+
+        zero_required is cleared on repeats: the mandatory zero window belongs to
+        the transition itself, and re-asserting it every 200 ms would hold the
+        base at zero forever.
+        """
+        if self.last_phase is None:
+            return
+        phase_value, task_id, reason, _ = self.last_phase
+        self.publish_phase(phase_value, task_id, reason, False)
+
+    @staticmethod
+    def phase_for(goal, enabled):
+        """Which automatic velocity source this task is allowed to use.
+
+        DOCKING authorises OpenNav Docking's /cmd_vel_dock; everything else that
+        may move authorises Nav2's /cmd_vel_nav.
+        """
+        if not enabled:
+            return MotionPhase.ZERO
+        if goal.task_type == 'dock':
+            return MotionPhase.DOCKING
+        if goal.mode == 'follow':
+            return MotionPhase.FOLLOWING
+        return MotionPhase.NAVIGATING
 
     def finish(self, handle, goal, state, success, outcome, terminal_method):
         terminal_method()

@@ -1,0 +1,10 @@
+# The command set itself is frozen in the technical plan (§3.12.2) and lives in
+# intent.py. Only the vocabulary below is site configuration.
+hr_voice_command:
+  ros__parameters:
+    min_confidence: 0.75
+    # Must mirror hr_task_manager's accepted locations/areas; anything absent
+    # here is refused out loud rather than approximated.
+    locations: []
+    target_classes: []
+    places: []

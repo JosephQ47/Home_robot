@@ -1,2 +1,2 @@
 dependency_timeout_sec: 1.0
-required_for_motion: [stm32, wheel_odom, imu, planar_scan, localization, nav2, collision_monitor]
+required_for_motion: [stm32, wheel_odom, imu, planar_scan, localization, nav2, motion_mux, collision_monitor]

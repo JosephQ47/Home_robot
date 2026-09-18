@@ -1,0 +1,9 @@
+# Pending the wrist D435i. Serial numbers and calibration validity are part of
+# the calibration file, not of this config; see docs/features/hr_arm.md §3.
+hr_arm_perception:
+  ros__parameters:
+    # D435i runs only during an arm task, to avoid fighting Gemini 2 for USB.
+    enable_only_during_arm_task: true
+    depth_timeout_ms: 300
+    min_depth_valid_ratio: 0.50
+    hand_eye_calibration_file: ''

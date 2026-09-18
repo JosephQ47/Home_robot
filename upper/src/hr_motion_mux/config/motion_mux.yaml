@@ -1,0 +1,8 @@
+# Initial values pending bench freeze; see docs/features/hr_motion_mux.md §4.
+# Do not quote these as measured results.
+hr_motion_mux:
+  ros__parameters:
+    publish_rate_hz: 50.0
+    source_timeout_ms: 200
+    phase_timeout_ms: 1000
+    zero_hold_ms: 300

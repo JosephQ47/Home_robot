@@ -12,7 +12,7 @@ def generate_launch_description():
     cfg = str(Path(get_package_share_directory('hr_local_motion')) / 'config' / 'local_motion.yaml')
     return LaunchDescription([
         DeclareLaunchArgument('enable', default_value='false'),
-        DeclareLaunchArgument('required_downstream_node', default_value='collision_monitor'),
+        DeclareLaunchArgument('required_downstream_node', default_value='hr_motion_mux'),
         Node(package='hr_local_motion', executable='local_motion',
              name='nav2_local_controller_adapter', output='screen',
              parameters=[cfg, {'output_enabled': True,

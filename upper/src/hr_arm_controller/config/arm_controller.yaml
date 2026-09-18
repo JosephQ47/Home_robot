@@ -1,0 +1,10 @@
+# Initial values pending the arm, servo controller and hand-eye calibration.
+# See docs/features/hr_arm.md. None of these are measured results.
+hr_arm_controller:
+  ros__parameters:
+    # Grasping is refused unless every one of these is satisfied (ARM-1..ARM-3).
+    base_stop_settle_ms: 500
+    stage_timeout_ms: 20000
+    min_detection_confidence: 0.70
+    calibration_file: ''
+    accepted_object_classes: []

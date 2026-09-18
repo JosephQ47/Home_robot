@@ -1,0 +1,7 @@
+# Pending microphone selection. The ASR engine sits behind a replaceable
+# adapter so no specific engine is frozen here; see docs/features/hr_voice.md §6.
+hr_voice_capture:
+  ros__parameters:
+    device: ''
+    wake_word: ''
+    asr_adapter: ''

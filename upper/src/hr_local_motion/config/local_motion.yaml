@@ -9,4 +9,4 @@ nav2_local_controller_adapter:
     max_linear_mps: 0.10
     max_angular_rps: 0.30
     input_timeout_sec: 0.5
-    required_downstream_node: collision_monitor
+    required_downstream_node: hr_motion_mux

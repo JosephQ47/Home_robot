@@ -21,7 +21,7 @@ class LocalMotion(Node):
         self.declare_parameter('max_linear_mps', 0.10)
         self.declare_parameter('max_angular_rps', 0.30)
         self.declare_parameter('input_timeout_sec', 0.5)
-        self.declare_parameter('required_downstream_node', 'collision_monitor')
+        self.declare_parameter('required_downstream_node', 'hr_motion_mux')
         if not bool(self.get_parameter('output_enabled').value):
             raise RuntimeError('local motion refuses to start unless output_enabled=true')
         self.odom = None; self.odom_time = 0.0
@@ -29,7 +29,7 @@ class LocalMotion(Node):
         self.goal = None; self.goal_started = 0.0
         self.target = None; self.target_time = 0.0
         self.follow = None
-        self.pub = self.create_publisher(Twist, '/cmd_vel_auto', 10)
+        self.pub = self.create_publisher(Twist, '/cmd_vel_nav', 10)
         self.create_subscription(Odometry, '/odometry/filtered', self.on_odom, 10)
         self.create_subscription(RobotStatus, '/robot_status', self.on_robot, 10)
         self.create_subscription(PoseStamped, '/goal_pose', self.on_goal, 10)
@@ -66,7 +66,7 @@ class LocalMotion(Node):
         if required == '*':
             return self.pub.get_subscription_count() > 0
         return any(info.node_name == required
-                   for info in self.get_subscriptions_info_by_topic('/cmd_vel_auto'))
+                   for info in self.get_subscriptions_info_by_topic('/cmd_vel_nav'))
 
     def publish(self, linear=0.0, angular=0.0):
         msg = Twist(); msg.linear.x = float(linear); msg.angular.z = float(angular); self.pub.publish(msg)

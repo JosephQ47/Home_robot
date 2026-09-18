@@ -1,0 +1,13 @@
+# Initial values pending measurement on the real robot; see
+# docs/features/hr_depth_obstacle.md §6. Ground height depends on the frozen
+# Gemini 2 mounting height and pitch.
+hr_depth_obstacle:
+  ros__parameters:
+    cloud_timeout_ms: 300
+    min_valid_ratio: 0.30
+    min_range_m: 0.20
+    max_range_m: 4.00
+    ground_height_m: 0.0
+    ground_tolerance_m: 0.03
+    obstacle_min_height_m: 0.05
+    obstacle_max_height_m: 1.20

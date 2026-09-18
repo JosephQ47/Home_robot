@@ -1,0 +1,20 @@
+# One entry per charging dock. Every number below is pending measurement:
+# tag_to_contact comes from calibration, the staging pose from an accepted map.
+hr_dock_pose_adapter:
+  ros__parameters:
+    dock_id: home_dock
+    tag_id: 0
+    # [x, y, yaw] from the tag frame to the point where the spring contacts meet.
+    tag_to_contact_xyyaw: [0.0, 0.0, 0.0]
+    dock_frame_id: odom
+    tag_timeout_ms: 500
+    max_jump_xy_m: 0.15
+    max_jump_yaw_rad: 0.35
+    max_consecutive_jumps: 3
+    min_consecutive_detections: 3
+
+docks:
+  home_dock:
+    # Nav2 drives here first; OpenNav Docking takes over from this pose.
+    staging_pose: {x: 0.0, y: 0.0, yaw: 0.0, frame_id: map}
+    tag_id: 0
