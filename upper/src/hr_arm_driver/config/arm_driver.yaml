@@ -1,7 +1,12 @@
-# Pending servo controller selection. The controller — not this node — owns
-# joint limits, over-current cutoff and action timeout; see docs/features/hr_arm.md §2.
+# transport=mock runs a simulated servo controller inside this process so the
+# arm chain can be exercised on a PC. Switch to serial once the controller is
+# selected; the controller — not this node — owns joint limits, over-current
+# cutoff and action timeout. See docs/features/hr_arm.md §2.
 hr_arm_driver:
   ros__parameters:
+    transport: mock
     serial_port: ''
     baudrate: 115200
-    command_timeout_ms: 200
+    status_rate_hz: 50.0
+    status_timeout_ms: 500
+    default_move_duration_ms: 800

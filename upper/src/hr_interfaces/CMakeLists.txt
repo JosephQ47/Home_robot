@@ -16,7 +16,10 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/FollowPolicy.msg"
   "msg/MotionPhase.msg"
   "msg/HmmdDetection.msg"
+  "msg/GraspCandidate.msg"
+  "msg/GraspCandidates.msg"
   "action/ExecuteTask.action"
+  "action/ExecuteArm.action"
   DEPENDENCIES geometry_msgs std_msgs
 )
 

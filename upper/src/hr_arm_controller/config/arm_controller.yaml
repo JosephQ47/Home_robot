@@ -1,10 +1,30 @@
-# Initial values pending the arm, servo controller and hand-eye calibration.
-# See docs/features/hr_arm.md. None of these are measured results.
+# Link lengths are a property of the arm that gets bought; these are placeholders
+# and MUST be measured before anything moves. The IK refuses targets outside the
+# reach they imply, so wrong values here produce refusals, not silent errors.
+# See docs/features/hr_arm.md.
 hr_arm_controller:
   ros__parameters:
-    # Grasping is refused unless every one of these is satisfied (ARM-1..ARM-3).
+    base_height_m: 0.10
+    shoulder_offset_m: 0.02
+    upper_arm_m: 0.15
+    forearm_m: 0.14
+    wrist_length_m: 0.08
+    joint_lower_rad: [-2.79, -1.57, -2.36, -2.79, -1.92, -3.14]
+    joint_upper_rad: [2.79, 1.92, 2.36, 2.79, 1.92, 3.14]
+
+    accepted_object_classes: ['']
+    accepted_places: ['']
+    # ARM-1: cmd_vel must stay at zero this long before the arm is allowed to move.
     base_stop_settle_ms: 500
     stage_timeout_ms: 20000
-    min_detection_confidence: 0.70
-    calibration_file: ''
-    accepted_object_classes: []
+    candidate_timeout_ms: 1000
+    # Stale wheel odometry withdraws the "base stopped" confirmation.
+    odom_timeout_ms: 500
+    move_duration_ms: 900
+    gripper_open_m: 0.09
+    gripper_closed_margin_m: 0.008
+    lift_current_threshold_a: 0.35
+    approach_pitch_rad: -1.5708     # straight down, for grasping off a table
+    pregrasp_height_m: 0.10
+    lift_height_m: 0.08
+    place_position_xyz: [0.20, -0.15, 0.10]

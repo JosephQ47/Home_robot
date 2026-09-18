@@ -1,0 +1,11 @@
+{
+  "_comment": "Template only. A real file is produced by the calibration run described in docs/features/hr_arm.md §3 and must never be hand-edited to make a grasp work.",
+  "arm_serial": "ARM-0000",
+  "camera_serial": "D435I-0000",
+  "created": "2026-01-01",
+  "valid_until": "2026-01-01",
+  "software_version": "0.0.0",
+  "mean_error_m": 0.0,
+  "max_error_m": 0.0,
+  "tool0_to_camera": {"x": 0.0, "y": 0.0, "z": 0.0, "roll": 0.0, "pitch": 0.0, "yaw": 0.0}
+}

@@ -1,0 +1,14 @@
+# Arm tasks the task manager may request. The arm never moves the base and the
+# base never moves during an arm task; see 技术方案 §3.12.5.
+string task_id
+string command            # ARM_HOME / ARM_GRASP / ARM_RELEASE / ARM_STOP
+string object_class       # required for ARM_GRASP; must be an accepted class
+string place_id           # required for ARM_RELEASE; must be an accepted place
+---
+bool success
+string outcome            # DONE / REJECTED / ABORTED / CANCELED
+string failed_stage       # the state machine stage that failed, empty on success
+string message
+---
+string stage
+float32 progress

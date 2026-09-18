@@ -1,9 +1,19 @@
-# Pending the wrist D435i. Serial numbers and calibration validity are part of
-# the calibration file, not of this config; see docs/features/hr_arm.md §3.
+# The wrist D435i runs only during an arm task, so it does not fight Gemini 2
+# for USB bandwidth (技术方案 §3.12.6).
+# hand_eye_calibration_file has no default: the node refuses to start without
+# one, because a grasp candidate that is not backed by a real calibration is
+# worse than no candidate. See docs/features/hr_arm.md §3.
 hr_arm_perception:
   ros__parameters:
-    # D435i runs only during an arm task, to avoid fighting Gemini 2 for USB.
+    hand_eye_calibration_file: ''
+    arm_serial: ''
+    camera_serial: ''
     enable_only_during_arm_task: true
     depth_timeout_ms: 300
     min_depth_valid_ratio: 0.50
-    hand_eye_calibration_file: ''
+    min_depth_m: 0.15
+    max_depth_m: 1.20
+    max_depth_spread_m: 0.08
+    accepted_object_classes: ['']
+    gripper_max_width_m: 0.09
+    min_confidence: 0.70
