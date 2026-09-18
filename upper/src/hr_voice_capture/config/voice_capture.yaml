@@ -1,12 +1,19 @@
-# asr_adapter=text reads /voice/text_in so the voice chain can be driven from a
-# terminal on a PC. Switch to vosk once a microphone is selected and a model is
-# on disk. An empty wake_word leaves the gate open — bench only.
-# See docs/features/hr_voice.md §6.
+# Wake word and speech capture.
+#
+# asr_adapter selects the backend. 'text' reads /voice/text_in, which drives the
+# whole voice chain from a terminal and replays a transcript during acceptance.
+# 'vosk' runs offline recognition from a model on disk; it needs the vosk and
+# sounddevice packages (scripts/install_deps.sh python).
 hr_voice_capture:
   ros__parameters:
     asr_adapter: text
     model_path: ''
     device: ''
-    wake_word: ''
+
+    # Two syllables, and not a word that occurs in ordinary conversation.
+    wake_word: 小家
+    # Long enough to finish a command like "放到桌面" without hurrying, short
+    # enough that the window closes before the next conversation starts.
     wake_window_sec: 8.0
+
     poll_rate_hz: 10.0

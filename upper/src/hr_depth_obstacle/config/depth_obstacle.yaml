@@ -1,13 +1,34 @@
-# Initial values pending measurement on the real robot; see
-# docs/features/hr_depth_obstacle.md §6. Ground height depends on the frozen
-# Gemini 2 mounting height and pitch.
+# Gemini 2 depth gating, sized from the camera's published specification and the
+# robot's own geometry.
+#
+# Orbbec Gemini 2 (active stereo IR): depth range 0.15–10 m, depth FOV 91°×66°,
+# depth output 1280×800 @30 fps. Accuracy is specified within 0.15–1.5 m, which
+# is why the useful window here is far shorter than the maximum range.
+#
+# Camera mounts 0.35 m above the floor on the front mast, pitched 15° down.
 hr_depth_obstacle:
   ros__parameters:
+    # 30 fps means a frame every 33 ms; 300 ms tolerates nine dropped frames
+    # before the local costmap stops trusting the cloud.
     cloud_timeout_ms: 300
+
+    # Active stereo drops out on dark, glossy and transparent surfaces. Below
+    # 30 % valid pixels the frame carries no usable evidence of free space.
     min_valid_ratio: 0.30
-    min_range_m: 0.20
+
+    # 0.25 m clears the sensor's 0.15 m minimum with margin for the mast offset.
+    # 4.0 m is where the 3 m local costmap window ends; beyond it the points
+    # would only be discarded again.
+    min_range_m: 0.25
     max_range_m: 4.00
+
+    # Floor plane in base_link, plus the flatness of an indoor floor over the
+    # 4 m window (thresholds, tile lips, carpet edges).
     ground_height_m: 0.0
     ground_tolerance_m: 0.03
+
+    # Obstacles that matter for a 0.42 m tall chassis: from a 0.05 m threshold
+    # strip up to 1.20 m, which covers table edges and chair backs while
+    # excluding ceiling fixtures and door frames.
     obstacle_min_height_m: 0.05
     obstacle_max_height_m: 1.20

@@ -1,7 +1,29 @@
-hr_image_source:
+# Orbbec Gemini 2 streams.
+#
+# The sensor offers depth up to 1280x800 and colour up to 1920x1080, both at
+# 30 fps. Neither is run at maximum: 848x480 depth is the resolution the depth
+# engine is specified at, and 1280x720 colour keeps the USB 3.0 budget free for
+# the wrist D435i during arm tasks while still spanning a 100 mm AprilTag over
+# ~80 px at 1 m.
+hr_camera:
   ros__parameters:
-    source: synthetic
-    publish_hz: 5.0
-    output_width: 640
-    frame_id: camera_optical_frame
-    # Real UVC format, resolution and frame rate remain TBD until enumeration testing.
+    # 'gemini2' drives the real camera; 'synthetic' and 'rtsp' are bench sources.
+    source: gemini2
+    device_path: /dev/gemini2
+
+    color_width: 1280
+    color_height: 720
+    color_fps: 30
+
+    depth_width: 848
+    depth_height: 480
+    depth_fps: 30
+
+    enable_point_cloud: true
+    # Colour and depth timestamps must agree to within half a frame for the
+    # same-frame depth lookup in hr_target_tracker to mean anything.
+    max_sync_error_ms: 16
+
+    frame_id: camera_link
+    color_optical_frame: camera_color_optical_frame
+    depth_optical_frame: camera_depth_optical_frame

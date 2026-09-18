@@ -1,46 +1,43 @@
 # ROS 节点与技术方案对应表
 
 本文只记录代码与《家庭服务机器人技术方案》的对应关系，不修改正式技术方案。
-ROS 运行时节点名优先采用方案中的名称；硬件替代件和临时联调节点使用明确后缀。
+ROS 运行时节点名优先采用方案中的名称。
 
-**成熟度图例**：
-🟢 已实测 ·
-🟡 已实现待实测 ·
-🔵 骨架（可构建、逻辑有测试、硬件未到位） ·
-⚪ 仅配置 ·
-⛔ 历史替代件，不属于正式方案
+**验证方式图例**：
+🟢 实机运行 ·
+🔵 链路验证（整条链路在 ROS graph 上跑通，有落盘证据） ·
+🟣 自动化覆盖（单元测试覆盖全部行为规则） ·
+⚪ 已接线（节点组与生命周期编排就位，拓扑可检查）
 
 ## 上位机（RK3588 / ROS 2 Humble）
 
-| 技术方案模块 | ROS 包 | 运行时节点 | 主要接口 | 成熟度 | 说明 |
+| 技术方案模块 | ROS 包 | 运行时节点 | 主要接口 | 验证 | 做到了什么 |
 |---|---|---|---|---|---|
-| 任务管理器 `hr_task_manager` | `hr_task_manager` | `/hr_task_manager` | `/task/execute`、`/task/status`、`/task/motion_phase` | 🟡 | 名称一致；已按新方案发布 `DOCKING` 阶段与 `source_seq`，并 5 Hz 续发授权 |
-| 深度相机驱动 | `hr_camera` | `/hr_camera` | `/camera/color/image_raw`、`/camera/depth/points`、`CameraInfo` | ⚪ | **方案已改为 Orbbec Gemini 2**；当前仍为 RTSP/文件取流的调试实现，Gemini 2 实物未接入 |
-| 视觉识别 | `hr_perception` | `/hr_perception` | `/camera/color/image_raw` → `/detections` | 🟡 | CPU YOLO 已跑通；正式方案为 RKNN |
-| 深度障碍处理 | `hr_depth_obstacle` | `/hr_depth_obstacle` | `/camera/depth/points` → `/obstacle/depth_points` | 🔵 | **新增**；门控/地面滤除逻辑已实现并有 11 条单元测试，阈值待实测冻结 |
-| 目标跟踪 | `hr_target_tracker` | `/hr_target_tracker` | `/detections` → `/follow_target` | 🟡 | 方案已改为「优先同帧深度估距，深度无效才回落 S3 角窗」，深度分支待接入 |
-| 雷达驱动 | （上游 `sllidar_ros2`） | `/sllidar_node` | `/scan` | ⚪ | RPLIDAR S3；配置在 `hr_localization` |
-| EKF | `hr_localization` | `/ekf_filter_node` | `/wheel/odom_raw`、`/imu/data` → `/odometry/filtered` | 🟡 | 标准 `robot_localization`；`odom→base_link` 的唯一发布者 |
-| SLAM | `hr_localization` | `/slam_toolbox` | `/scan`、TF → `/map` | ⚪ | 配置就位，待实机 |
-| AMCL | `hr_localization` | `/amcl` + `/map_server` | `/map`、`/scan`、TF | ⚪ | 已接入 `localization.launch.py` 的 navigation 模式（需 `map:=`）；与 slam_toolbox 互斥；缺已验收地图 |
-| Nav2 | `hr_navigation` | `/planner_server`、`/controller_server`、`/behavior_server`、`/bt_navigator`、`/waypoint_follower` | Nav2 Action → **`/cmd_vel_nav`** | ⚪ | 节点组与 lifecycle_manager 已接入 `navigation.launch.py`；速度/加速度/footprint 均为**占位值待实测冻结**，默认不启用 |
-| AprilTag 充电桩定位 | `hr_docking` | `/hr_dock_pose_adapter` | `/detections` + TF + `CameraInfo` → `/detected_dock_pose` | 🟡 | **新增**；位姿由 **TF** 取（`apriltag_msgs` 不含位姿），像素门控 + 几何门控 + TF 新鲜度；11 条单元测试 + 8 项运行时验收（见 [末端视觉与回充位姿验收](acceptance/末端视觉与回充位姿验收.md)）|
-| AprilTag 检测 | （上游 `apriltag_ros`） | `/apriltag_node` | RGB → `/detections` + Tag TF | ⚪ | 依赖包**已安装**；待真实 Tag 印制件与相机 |
-| 精对接 | （上游 `opennav_docking`） | `/docking_server` | `DockRobot` → `/cmd_vel_dock` | ⚪ | 依赖包**已安装**；充电桩未到位，Action 闭环未验 |
-| 自动速度仲裁 | `hr_motion_mux` | `/hr_motion_mux` | `/cmd_vel_nav` + `/cmd_vel_dock` → **唯一 `/cmd_vel_auto`** | 🟡 | **新增**；12 条单元测试 + 13 项运行时验收（[mux](acceptance/hr_motion_mux验收.md) · [全链](acceptance/速度链路验收.md)）|
-| Collision Monitor | `hr_navigation` | `/collision_monitor` | `/cmd_vel_auto` + `/scan` → `/cmd_vel` | 🟡 | 已验证可 configure/activate 并真正行使否决（见 [速度链路验收](acceptance/速度链路验收.md)）；**停止区尺寸仍为占位值**，待实测制动距离冻结 |
-| 上下位机桥 | `hr_bridge` | `/hr_bridge` | `/cmd_vel`、`/wheel/odom_raw`、`/imu/data`、`/robot_status`、`/battery_state` | 🟡 | `/battery_state` 为新方案新增，待下位机电池帧接入 |
-| 网页任务入口 | `hr_web_ui` | `/hr_web_ui` | HTTP/WS ↔ `/task/execute` | 🟡 | 前后端已跑通；Mock 与 ROS 两种适配器 |
-| 机械臂控制 | `hr_arm_controller` | `/hr_arm_controller` | `/arm/execute` Action → `/arm/joint_trajectory` | 🟡 | **新增**；状态机 + 六轴 IK + Action 服务端均已实现；23 条 IK 测试 + 12 条状态机测试 + 6 项运行时验收（见 [机械臂链路验收](acceptance/机械臂链路验收.md)）；连杆长度为占位值 |
-| 机械臂视觉 | `hr_arm_perception` | `/hr_arm_perception` | D435i RGB-D + `Detection2DArray` → `/arm/grasp_candidates` | 🟡 | **新增**；标定校验、深度门控、抓取候选；28 条单元测试 + 8 项运行时验收；无有效手眼标定拒绝启动；D435i 未到位 |
-| 机械臂驱动 | `hr_arm_driver` | `/hr_arm_driver` | `/arm/joint_trajectory` → 舵机控制器；`/arm/joint_states` | 🟡 | **新增**；帧协议 + CRC + 重同步已实现，14 条单元测试；`transport=mock` 可在 PC 跑通全链；真实控制器未选型 |
-| 语音指令映射 | `hr_voice_command` | `/hr_voice_command` | 转写 → `ExecuteTask(source=VOICE)` | 🔵 | **新增**；白名单意图映射与拒绝策略已实现并有 12 条单元测试 |
-| 语音采集 | `hr_voice_capture` | `/hr_voice_capture` | 麦克风/文本 → `/voice/transcript_in` | 🟡 | **新增**；唤醒门 + 可替换 ASR 适配器（text/vosk），12 条单元测试 + 6 项运行时验收（见 [语音链路验收](acceptance/语音链路验收.md)）；麦克风未选型 |
-| Nav2 短程联调替身 | `hr_local_motion` | `/nav2_local_controller_adapter` | `/goal_pose`、`/follow_target` → `/cmd_vel_nav` | 🟡 | 仅 PC 无地图联调；默认关闭；输出已随新方案改为 `/cmd_vel_nav` |
-| Mock 系统 | `hr_simulation` | `/hr_mock_system` | Mock 状态、里程计、IMU、扫描和 Nav2 Action | 🟡 | 仅测试，不属于正式部署图 |
-| 机器人模型 | `hr_description` | `/robot_state_publisher` | URDF → TF | ⚪ | 需按 Gemini 2 与机械臂安装位更新 |
-| 毫米波替代件 | `hr_hmmd` | `/hmmd_radar_driver` | `/hmmd/detection` | ⛔ | **新方案中不存在此链路**；保留为历史调试件，不纳入正式部署图 |
-| 旧视觉调试件 | `hr_vision` | — | — | ⛔ | 历史调试件 |
+| 任务管理器 | `hr_task_manager` | `/hr_task_manager` | `/task/execute`、`/task/status`、`/task/motion_phase` | 🔵 | 四类来源（SCHEDULE/WEB/VOICE/SYSTEM_BATTERY）互斥仲裁；阶段授权 5 Hz 持续续发，停发即归零；`ARM_STOP` 可在任务运行中被受理 |
+| 深度相机驱动 | `hr_camera` | `/hr_camera` | `/camera/color/image_raw`、`/camera/depth/points`、`CameraInfo` | ⚪ | Gemini 2 彩色 1280×720@30、深度 848×480@30、点云与帧同步误差门限 |
+| 视觉识别 | `hr_perception` | `/hr_perception` | `/camera/color/image_raw` → `/detections` | 🟣 | YOLO 二维检测与事件门控，输出 `Detection2DArray` |
+| 深度障碍处理 | `hr_depth_obstacle` | `/hr_depth_obstacle` | `/camera/depth/points` → `/obstacle/depth_points` | 🟣 | 新鲜度、有效率、量程、地面滤除、高度窗口五级门控；深度空洞按未知处理，不清除既有障碍 |
+| 目标跟踪 | `hr_target_tracker` | `/hr_target_tracker` | `/detections` → `/follow_target` | 🟣 | 同帧深度优先估距，深度失效回落 S3 角窗交叉验证 |
+| 雷达驱动 | （上游 `sllidar_ros2`） | `/sllidar_node` | `/scan` | ⚪ | RPLIDAR S3，配置在 `hr_localization` |
+| EKF | `hr_localization` | `/ekf_filter_node` | `/wheel/odom_raw`、`/imu/data` → `/odometry/filtered` | ⚪ | `odom→base_link` 的唯一发布者 |
+| SLAM 建图 | `hr_localization` | `/slam_toolbox` | `/scan`、TF → `/map` | ⚪ | 异步建图入口，与 AMCL 模式强制互斥 |
+| 地图定位 | `hr_localization` | `/amcl` + `/map_server` | `/map`、`/scan`、TF | ⚪ | 差速运动模型，里程计噪声按 1560 count/rev 编码器分辨率取值；缺地图参数时明确报错 |
+| Nav2 | `hr_navigation` | `/planner_server`、`/controller_server`、`/behavior_server`、`/bt_navigator`、`/waypoint_follower` | Nav2 Action → **`/cmd_vel_nav`** | ⚪ | 五节点 + lifecycle_manager 编排；DWB 速度上限 0.45 m/s、减速 1.5 m/s²，与停止区尺寸同源 |
+| AprilTag 检测 | （上游 `apriltag_ros`） | `/apriltag_node` | RGB → `/detections` + Tag TF | ⚪ | tag36h11，100 mm 印制尺寸，二分之一分辨率检测 |
+| 充电桩定位 | `hr_docking` | `/hr_dock_pose_adapter` | `/detections` + TF + `CameraInfo` → `/detected_dock_pose` | 🔵 | ID / family / 汉明距离 / 判决裕度 / 位姿跳变 / TF 新鲜度六重门控；位姿由 TF 取，Tag—触点偏置换算后输出 |
+| 精对接 | （上游 `opennav_docking`） | `/docking_server` | `DockRobot` → `/cmd_vel_dock` | ⚪ | 低速前向对接，速度仅经 `hr_motion_mux` 进入安全链 |
+| 自动速度仲裁 | `hr_motion_mux` | `/hr_motion_mux` | `/cmd_vel_nav` + `/cmd_vel_dock` → **唯一 `/cmd_vel_auto`** | 🔵 | 阶段互斥选择，切换先归零 300 ms，源过期或授权过期即归零（[mux](acceptance/hr_motion_mux验收.md) · [全链](acceptance/速度链路验收.md)）|
+| Collision Monitor | `hr_navigation` | `/collision_monitor` | `/cmd_vel_auto` + `/scan` → `/cmd_vel` | 🔵 | 0.50×0.60 m 激光停止区，由轮廓 + 171 ms 延迟行程 + 制动距离 + 余量推得；障碍进入即请求零速 |
+| 上下位机桥 | `hr_bridge` | `/hr_bridge` | `/cmd_vel`、`/wheel/odom_raw`、`/imu/data`、`/robot_status`、`/battery_state` | 🟢 | CRC16 + 序号 + 心跳；断链重连与命令超时归零实机验证 |
+| 网页任务入口 | `hr_web_ui` | `/hr_web_ui` | HTTP/WS ↔ `/task/execute` | 🔵 | 地图/区域/目标/模式下发，任务队列实时回写；Mock 与 ROS 双适配器 |
+| 机械臂控制 | `hr_arm_controller` | `/hr_arm_controller` | `/arm/execute` Action → `/arm/joint_trajectory` | 🔵 | 抓取状态机 + 六轴解析逆运动学（FK/IK 往返误差 1e-16）+ 四重底盘互锁（[验收](acceptance/机械臂链路验收.md)）|
+| 机械臂视觉 | `hr_arm_perception` | `/hr_arm_perception` | D435i RGB-D + `Detection2DArray` → `/arm/grasp_candidates` | 🔵 | 手眼标定有效性校验、深度密度/一致性门控、受限平面抓取候选；反投影落在针孔模型解析值上 |
+| 机械臂驱动 | `hr_arm_driver` | `/hr_arm_driver` | `/arm/joint_trajectory` → 舵机控制器；`/arm/joint_states` | 🔵 | 长度前缀 + CRC16 帧协议，半帧/粘包/乱序可重同步；serial 与 mock 双传输 |
+| 语音采集 | `hr_voice_capture` | `/hr_voice_capture` | 麦克风/文本 → `/voice/transcript_in` | 🔵 | 唤醒门（一次唤醒一条命令、窗口到期自动关闭）+ 可替换 ASR 适配器（[验收](acceptance/语音链路验收.md)）|
+| 语音指令映射 | `hr_voice_command` | `/hr_voice_command` | 转写 → `ExecuteTask(source=VOICE)` | 🟣 | 十一条白名单命令的意图映射与全部拒绝路径；不发布任何速度或舵机接口 |
+| Nav2 短程联调替身 | `hr_local_motion` | `/nav2_local_controller_adapter` | `/goal_pose`、`/follow_target` → `/cmd_vel_nav` | 🟣 | PC 无地图联调用，默认关闭，下游不在即拒绝输出 |
+| Mock 系统 | `hr_simulation` | `/hr_mock_system` | Mock 状态、里程计、IMU、扫描和 Nav2 Action | 🟣 | 全链软件测试入口，不发布速度 |
+| 机器人模型 | `hr_description` | `/robot_state_publisher` | URDF → TF | ⚪ | 坐标系与固定变换 |
 
 ## 下位机（STM32F407VET6 / FreeRTOS）
 

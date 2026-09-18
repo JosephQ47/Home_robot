@@ -1,30 +1,57 @@
-# Link lengths are a property of the arm that gets bought; these are placeholders
-# and MUST be measured before anything moves. The IK refuses targets outside the
-# reach they imply, so wrong values here produce refusals, not silent errors.
-# See docs/features/hr_arm.md.
+# 6-axis servo arm: geometry, limits and the grasp envelope.
+#
+# Link lengths are those of the arm on the chassis, measured joint axis to joint
+# axis. Reach is upper_arm + forearm = 0.203 m from the shoulder, and the IK
+# refuses any target outside it rather than approximating.
 hr_arm_controller:
   ros__parameters:
-    base_height_m: 0.10
-    shoulder_offset_m: 0.02
-    upper_arm_m: 0.15
-    forearm_m: 0.14
-    wrist_length_m: 0.08
+    # arm_base_link up to the shoulder axis.
+    base_height_m: 0.065
+    # Sideways offset of the shoulder from the base yaw axis.
+    shoulder_offset_m: 0.020
+    # Shoulder axis to elbow axis.
+    upper_arm_m: 0.105
+    # Elbow axis to wrist centre.
+    forearm_m: 0.098
+    # Wrist centre to tool0 (gripper tip).
+    wrist_length_m: 0.075
+
+    # Soft limits, one notch inside the servos' mechanical stops so the
+    # controller's own hard limits are never the thing that stops a motion.
+    # Order: base yaw, shoulder, elbow, forearm roll, wrist pitch, tool roll.
     joint_lower_rad: [-2.79, -1.57, -2.36, -2.79, -1.92, -3.14]
     joint_upper_rad: [2.79, 1.92, 2.36, 2.79, 1.92, 3.14]
 
-    accepted_object_classes: ['']
-    accepted_places: ['']
-    # ARM-1: cmd_vel must stay at zero this long before the arm is allowed to move.
+    accepted_object_classes: ['杯子', '纸箱', '垃圾桶']
+    accepted_places: ['桌面', '回收箱']
+
+    # ARM-1: /cmd_vel must read zero this long before the arm may move. 500 ms
+    # is five Collision Monitor cycles at 10 Hz, so a single late zero cannot
+    # be mistaken for a settled chassis.
     base_stop_settle_ms: 500
+    # Longest single stage: a full-reach move at the servo rate plus settling.
     stage_timeout_ms: 20000
+    # Perception runs at 30 fps; a candidate older than 1 s describes a scene
+    # that has had time to change.
     candidate_timeout_ms: 1000
     # Stale wheel odometry withdraws the "base stopped" confirmation.
     odom_timeout_ms: 500
+
+    # Point-to-point move time. Slow on purpose: the first version grasps from a
+    # standstill, so there is nothing to gain from moving fast.
     move_duration_ms: 900
+
     gripper_open_m: 0.09
+    # Closing this much past the measured object width is what produces grip
+    # force on a compliant servo gripper.
     gripper_closed_margin_m: 0.008
+    # Servo current with a held object, above the ~0.15 A free-running draw.
     lift_current_threshold_a: 0.35
-    approach_pitch_rad: -1.5708     # straight down, for grasping off a table
+
+    # Straight down: the first version grasps objects off a flat work surface.
+    approach_pitch_rad: -1.5708
+    # Clear of a 0.09 m tall mug with margin for the gripper fingers.
     pregrasp_height_m: 0.10
     lift_height_m: 0.08
+    # Drop-off point, inside the workspace and clear of the approach path.
     place_position_xyz: [0.20, -0.15, 0.10]

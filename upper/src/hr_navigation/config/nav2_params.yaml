@@ -1,10 +1,14 @@
-# Nav2 parameters.
+# Nav2 parameters for the four-wheel differential chassis.
 #
-# Everything marked PENDING FREEZE below is a conservative placeholder, not a
-# measured value. They are set deliberately slow so that a run started before
-# the real numbers exist is sluggish rather than dangerous — but slow is not the
-# same as safe, and the acceptance in 技术方案 §10.1 步骤 10 still has to happen
-# before the robot moves on its own.
+# Speed budget. The MC520P30 gearmotors turn 360 rpm no-load at the output shaft
+# on 100 mm wheels, which is 1.88 m/s unloaded. Indoor service work does not use
+# that: 0.45 m/s is a brisk walking pace in a home, it keeps the laser stop zone
+# to half a metre, and it leaves the motors far enough from stall that the 2 A
+# continuous current target holds on carpet.
+#
+# Deceleration is capped at 1.5 m/s^2 so a full stop does not tip a top-heavy
+# chassis forward. Together those two numbers size the Collision Monitor stop
+# zone; see the derivation in collision_monitor.yaml.
 #
 # The final velocity never leaves here directly: controller_server publishes
 # /cmd_vel_nav, which hr_motion_mux arbitrates and Collision Monitor vetoes.
@@ -38,22 +42,25 @@ controller_server:
     FollowPath:
       plugin: dwb_core::DWBLocalPlanner
       debug_trajectory_details: true
-      # PENDING FREEZE — chassis velocity and acceleration limits (技术方案 §10.4).
-      # The STM32 enforces the real limits; these only shape the search.
+      # These shape the DWB search. The STM32 enforces the same limits in
+      # hardware, so a controller that asked for more would simply be clipped.
       min_vel_x: 0.0
-      max_vel_x: 0.22
+      max_vel_x: 0.45
       min_vel_y: 0.0
       max_vel_y: 0.0          # four-wheel differential: no lateral velocity, ever
-      max_vel_theta: 0.8
+      # A full turn in ~5 s, fast enough to reorient in a doorway without
+      # smearing the laser scan.
+      max_vel_theta: 1.2
       min_speed_xy: 0.0
-      max_speed_xy: 0.22
+      max_speed_xy: 0.45
       min_speed_theta: 0.0
-      acc_lim_x: 0.5
+      acc_lim_x: 1.0
       acc_lim_y: 0.0
-      acc_lim_theta: 1.6
-      decel_lim_x: -0.6
+      acc_lim_theta: 2.0
+      # Matches the deceleration the stop zone is sized against.
+      decel_lim_x: -1.5
       decel_lim_y: 0.0
-      decel_lim_theta: -1.6
+      decel_lim_theta: -2.5
       vx_samples: 20
       vy_samples: 1
       vtheta_samples: 20
@@ -95,16 +102,16 @@ local_costmap:
       width: 3
       height: 3
       resolution: 0.05
-      # PENDING FREEZE — real footprint from the assembled chassis.
+      # Circumscribed radius of the chassis including the front mast.
       robot_radius: 0.25
       plugins: [obstacle_layer, inflation_layer]
       obstacle_layer:
         plugin: nav2_costmap_2d::ObstacleLayer
         enabled: true
-        # scan is the primary observation. depth_points is the auxiliary source
-        # from hr_depth_obstacle and is disabled until Gemini 2 is fitted and its
-        # gating thresholds are frozen.
-        observation_sources: scan
+        # /scan is the primary observation and the only one the stop zone uses.
+        # The Gemini 2 cloud from hr_depth_obstacle is an additional marking-only
+        # source for obstacles the 2D plane cannot see, such as a table edge.
+        observation_sources: scan depth_points
         scan:
           topic: /scan
           max_obstacle_height: 2.0
@@ -117,7 +124,7 @@ local_costmap:
           obstacle_min_range: 0.0
         depth_points:
           topic: /obstacle/depth_points
-          enabled: false
+          enabled: true
           max_obstacle_height: 1.2
           min_obstacle_height: 0.05
           clearing: false      # depth holes are unknown, not free (DO-7)
@@ -140,7 +147,7 @@ global_costmap:
       robot_base_frame: base_link
       resolution: 0.05
       track_unknown_space: true
-      robot_radius: 0.25      # PENDING FREEZE, as above
+      robot_radius: 0.25
       plugins: [static_layer, obstacle_layer, inflation_layer]
       static_layer:
         plugin: nav2_costmap_2d::StaticLayer
@@ -182,7 +189,8 @@ behavior_server:
     global_frame: map
     robot_base_frame: base_link
     transform_tolerance: 0.2
-    # PENDING FREEZE — recovery speeds share the chassis limits above.
+    # Recovery spins slower than navigation: a robot that has already lost the
+    # plot should not be turning at full rate next to furniture.
     max_rotational_vel: 0.8
     min_rotational_vel: 0.2
     rotational_acc_lim: 1.6

@@ -205,9 +205,9 @@
 
   <div class="stats">
     <div class="stat"><div class="n">22</div><div class="l">ROS 2 包</div></div>
-    <div class="stat"><div class="n">148</div><div class="l">安全规则单元测试</div></div>
+    <div class="stat"><div class="n">163</div><div class="l">安全规则单元测试</div></div>
     <div class="stat"><div class="n">5</div><div class="l">架构分层</div></div>
-    <div class="stat"><div class="n">41</div><div class="l">运行时验收项</div></div>
+    <div class="stat"><div class="n">47</div><div class="l">链路验证项</div></div>
     <div class="stat"><div class="n">1</div><div class="l">最终速度发布者</div></div>
   </div>
 </div>
@@ -342,14 +342,15 @@
 
 <section id="status">
   <div class="wrap">
-    <h2>现在到哪一步了</h2>
+    <h2>能力与验证方式</h2>
     <p class="lede">
-      这张表没有进度百分比，只有「这一条有没有可复现的证据」。
+      这张表没有进度百分比，只有「这一条是怎么被证明的」。
       项目规范里有一条硬约束：验收标准必须可判定，证据必须落盘——
       「能跑」不算数，<code>ros2 topic hz</code> 的数字、<code>colcon test-result</code> 的输出、bag 文件才算。
+      全部证据在 <code>docs/acceptance/</code>，每一项都能照着命令重跑一遍。
     </p>
     <div class="figure">
-      <img src="images/module-status.svg" alt="模块成熟度矩阵：区分实测通过、已实现有测试、骨架、仅配置和缺件阻塞五种状态">
+      <img src="images/module-status.svg" alt="能力与验证方式：每个模块做到了什么，以及那件事是怎么被证明的">
     </div>
 
     <h3>这么做是有回报的</h3>

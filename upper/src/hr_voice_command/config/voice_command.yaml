@@ -1,10 +1,15 @@
-# The command set itself is frozen in the technical plan (§3.12.2) and lives in
-# intent.py. Only the vocabulary below is site configuration.
+# Speech to whitelisted task requests.
+#
+# The command set itself is fixed in the technical plan (§3.12.2) and lives in
+# intent.py. Only the site vocabulary below is configuration — and it must match
+# hr_task_manager's accepted locations and hr_arm_controller's accepted classes
+# and places, because anything absent here is refused out loud rather than
+# approximated.
 hr_voice_command:
   ros__parameters:
+    # Below this the recogniser is guessing, and a guessed command moves a robot.
     min_confidence: 0.75
-    # Must mirror hr_task_manager's accepted locations/areas; anything absent
-    # here is refused out loud rather than approximated.
-    locations: []
-    target_classes: []
-    places: []
+
+    locations: ['客厅', '厨房', '走廊', '卧室', '书房']
+    target_classes: ['人员', '纸箱', '垃圾桶', '杯子']
+    places: ['桌面', '回收箱']

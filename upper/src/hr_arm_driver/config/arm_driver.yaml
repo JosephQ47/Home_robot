@@ -1,12 +1,23 @@
-# transport=mock runs a simulated servo controller inside this process so the
-# arm chain can be exercised on a PC. Switch to serial once the controller is
-# selected; the controller — not this node — owns joint limits, over-current
-# cutoff and action timeout. See docs/features/hr_arm.md §2.
+# Link to the independent servo controller.
+#
+# transport=mock runs a simulated controller inside this process, which lets the
+# whole arm chain — state machine, IK, trajectory dispatch, grasp confirmation —
+# be exercised without the arm. transport=serial talks to the real controller.
+#
+# Joint limits, over-current cutoff and action timeout live in the controller,
+# close to the hardware, where a hung RK3588 cannot switch them off.
 hr_arm_driver:
   ros__parameters:
     transport: mock
-    serial_port: ''
+    serial_port: /dev/robot_arm
+    # 115200 carries a 6-joint command frame (28 bytes) in 2.4 ms, comfortably
+    # inside the 20 ms status period.
     baudrate: 115200
+
+    # Status at 50 Hz: fast enough to catch a stall within one servo revolution.
     status_rate_hz: 50.0
+    # Ten missed status frames means the link is down, not merely jittery.
     status_timeout_ms: 500
+
+    # Used when a trajectory point carries no duration of its own.
     default_move_duration_ms: 800

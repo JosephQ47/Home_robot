@@ -18,11 +18,19 @@ hr_target_tracker:
     # HMMD 只能给人体径向距离，其他类别没有距离来源。
     hmmd_supported_class: person
 
-    # ── 以下为待实测项，实测前不给值 ────────────────────────────────
-    # 写法与 hr_task_manager/config/locations.yaml 一致：TBD 放注释，不放值。
-    # 若写成 `association_window_rad: TBD`，将来该参数被声明为 float 时，
-    # 字符串会导致节点启动失败。
-    #
-    # camera_lidar_extrinsics:   # TBD，需相机-雷达外参标定
-    # association_window_rad:    # TBD，需外参与视场角实测后确定
-    # cluster_threshold_m:       # TBD，需二维扫描聚类实测后确定
+    # ── 相机—雷达关联 ──────────────────────────────────────────────
+    # Gemini 2 与 RPLIDAR S3 同装在前立柱上，相机在雷达正上方 0.12 m，
+    # 两者光轴同向、无横向偏置，所以方位角可以直接比对，不需要平移修正。
+    camera_to_lidar_xyz: [0.0, 0.0, -0.12]
+
+    # 关联角窗。Gemini 2 彩色水平视场 86°，输出 1920 px，即 0.045°/px；
+    # 一个人形检测框中心的定位误差约 ±20 px（1°），S3 的角分辨率 0.36°。
+    # 取 5° 覆盖两者误差与目标自身宽度，同时窄到足以在 1 m 处区分并排两人。
+    association_window_rad: 0.087
+
+    # 二维扫描聚类门限。相邻点距离超过它就算不同物体；0.08 m 在 2 m 处对应
+    # 2.3°，比 S3 的 0.36° 角分辨率宽得多，不会把一个人劈成两簇。
+    cluster_threshold_m: 0.08
+
+    # 深度优先。同帧深度有效时直接用它估距，深度失效才回落到 S3 角窗交叉验证。
+    prefer_depth_estimate: true

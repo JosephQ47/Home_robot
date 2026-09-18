@@ -11,7 +11,7 @@
 [![Nav2](https://img.shields.io/badge/Nav2-Navigation-4A90D9)](https://navigation.ros.org/)
 [![License](https://img.shields.io/badge/License-Apache%202.0-D22128)](LICENSE)
 
-<sub>22 个 ROS 2 包 · 148 条安全规则单元测试 · 41 项运行时验收 · 下位机四路闭环与安全链已实机验收</sub>
+<sub>22 个 ROS 2 包 · 163 条安全规则单元测试 · 47 项链路验证 · 底盘四轮闭环与安全链实机运行</sub>
 
 </div>
 
@@ -115,15 +115,16 @@ python3 web_control/backend/app.py --adapter ros --host 0.0.0.0 --port 8080  # �
 
 ---
 
-## 现在到哪一步了
+## 能力与验证方式
 
 <div align="center">
-  <img src="docs/images/module-status.svg" alt="模块成熟度矩阵：区分实测通过、已实现有测试、骨架、仅配置和缺件阻塞五种状态" width="100%">
+  <img src="docs/images/module-status.svg" alt="能力与验证方式：每个模块做到了什么，以及那件事是怎么被证明的" width="100%">
 </div>
 
-这张表没有进度百分比，只有「这一条有没有可复现的证据」。
+这张表没有进度百分比，只有「这一条是怎么被证明的」。
 项目规范里有一条硬约束：**验收标准必须可判定，证据必须落盘**——
 「能跑」「实测正常」不算数，`ros2 topic hz` 的数字、`colcon test-result` 的输出、bag 文件才算。
+全部证据在 [`docs/acceptance/`](docs/acceptance/)，每一项都能照着命令重跑一遍。
 
 这么做是有回报的。**目前为止，每一个真正危险的缺陷都是「跑起来」而不是「读代码」发现的**：
 
@@ -246,7 +247,7 @@ AI 写代码的成本趋近于零，成本转移到了「凭什么相信这段�
 | [家庭服务机器人技术方案.md](家庭服务机器人技术方案.md) | 权威技术基线：硬件、分层、模块、时序、协议、验收 |
 | [docs/ROS节点与技术方案对应表.md](docs/ROS节点与技术方案对应表.md) | 代码与方案的逐条对应及成熟度 |
 | [docs/features/](docs/features/) | 各功能模块设计文档与验收标准 |
-| [docs/acceptance/](docs/acceptance/) | 验收步骤与实测证据（速度仲裁、机械臂链路、语音链路） |
+| [docs/acceptance/](docs/acceptance/) | 各链路的验证命令与原始输出 |
 | [docs/项目任务清单.md](docs/项目任务清单.md) | 阶段依赖与阻塞状态 |
 | [upper/README-framework.md](upper/README-framework.md) | ROS 2 框架说明 |
 | [lower/README.md](lower/README.md) | STM32 下位机框架 |

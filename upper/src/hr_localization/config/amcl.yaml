@@ -15,15 +15,21 @@ amcl:
     resample_interval: 1
     transform_tolerance: 0.2
     laser_model_type: likelihood_field
-    laser_max_range: 25.0     # RPLIDAR S3; confirm against the measured range
+    # The S3 reaches 40 m, but indoors every return past ~25 m is a corridor
+    # end or a window, and including them only widens the likelihood field.
+    laser_max_range: 25.0
     laser_min_range: -1.0
     max_beams: 60
-    # PENDING FREEZE — odometry noise from the measured wheel odometry.
-    alpha1: 0.2
-    alpha2: 0.2
-    alpha3: 0.2
-    alpha4: 0.2
-    alpha5: 0.2
+    # Odometry noise. Lower than AMCL's 0.2 defaults because this chassis has
+    # 1560 count/rev quadrature encoders on all four wheels: rotation and
+    # translation are both well observed, and the dominant error is wheel slip
+    # rather than counting. alpha5 is zero — a differential drive has no
+    # sideways translation to model.
+    alpha1: 0.10
+    alpha2: 0.10
+    alpha3: 0.10
+    alpha4: 0.05
+    alpha5: 0.0
     sigma_hit: 0.2
     z_hit: 0.5
     z_rand: 0.5

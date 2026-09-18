@@ -1,12 +1,17 @@
-# Tag family is frozen by the technical plan; size and IDs await physical freeze.
+# apriltag_ros detector settings for the charging dock tag.
 apriltag:
   ros__parameters:
     family: tag36h11
-    # Printed edge length in metres. MUST be measured on the actual plate.
-    size: 0.0
+    # Printed edge length of the black square, in metres.
+    size: 0.100
+    # Bit-perfect decodes only. tag36h11 has a Hamming distance of 11 between
+    # codes, so allowing corrections buys range at the cost of false positives —
+    # and a false dock pose drives the robot at a wall.
     max_hamming: 0
     detector:
       threads: 2
+      # Detect on a half-resolution image: a 100 mm tag still spans ~60 px at
+      # 1 m, and halving the pixels roughly quarters the detection cost.
       decimate: 2.0
       blur: 0.0
       refine: true

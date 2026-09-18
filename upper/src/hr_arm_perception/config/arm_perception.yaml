@@ -1,19 +1,41 @@
-# The wrist D435i runs only during an arm task, so it does not fight Gemini 2
-# for USB bandwidth (技术方案 §3.12.6).
-# hand_eye_calibration_file has no default: the node refuses to start without
-# one, because a grasp candidate that is not backed by a real calibration is
-# worse than no candidate. See docs/features/hr_arm.md §3.
+# Wrist D435i perception, sized from the camera's published specification.
+#
+# Intel RealSense D435i: depth FOV 87°×58°, minimum depth Z 0.28 m, optimal
+# range 0.3–3 m, depth 848×480 @30 fps, RGB 1920×1080. The IMU is unused here —
+# the arm's pose comes from joint feedback, not from the camera.
+#
+# The D435i runs only while an arm task is active so it does not share USB 3.0
+# bandwidth with Gemini 2 during navigation (技术方案 §3.12.6).
 hr_arm_perception:
   ros__parameters:
+    # Produced by the hand-eye calibration described in docs/features/hr_arm.md §3.
+    # The node refuses to start without one: a grasp pose that is not backed by a
+    # real calibration is worse than no pose.
     hand_eye_calibration_file: ''
     arm_serial: ''
     camera_serial: ''
+
     enable_only_during_arm_task: true
+
+    # 30 fps; 300 ms covers nine dropped frames.
     depth_timeout_ms: 300
+
+    # Half the pixels inside the detection box must carry depth. Below that the
+    # box is looking at a specular or transparent surface.
     min_depth_valid_ratio: 0.50
-    min_depth_m: 0.15
-    max_depth_m: 1.20
+
+    # 0.28 m is the D435i's minimum Z. 0.80 m is the far edge of the arm's
+    # workspace, so anything beyond it is unreachable regardless of depth quality.
+    min_depth_m: 0.28
+    max_depth_m: 0.80
+
+    # Depths inside one object's box vary by its own thickness. 0.08 m accepts a
+    # mug or a box while rejecting a box that straddles an edge into background.
     max_depth_spread_m: 0.08
-    accepted_object_classes: ['']
+
+    accepted_object_classes: ['杯子', '纸箱', '垃圾桶']
+
+    # Parallel gripper stroke, jaw to jaw.
     gripper_max_width_m: 0.09
+
     min_confidence: 0.70

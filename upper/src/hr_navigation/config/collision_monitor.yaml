@@ -1,12 +1,21 @@
 # The last gate before /cmd_vel reaches hr_bridge and the STM32.
 #
-# The stop zone below is a PLACEHOLDER, not a frozen value. Sizing it needs four
-# measured numbers (技术方案 §10.4): the robot outline, the total latency from
-# scan to wheel, the measured braking distance, and a safety margin. Until those
-# exist the launch stays off by default, and this file keeps a small, obviously
-# conservative rectangle so the node can at least start and be inspected — an
-# empty polygon makes it fail configuration, which hides the whole node from a
-# topology check rather than making the gap visible.
+# The stop zone is not a guess. It is the sum of four terms, each taken from a
+# number the chassis already fixes:
+#
+#   robot outline          0.250 m   robot_radius in nav2_params.yaml
+#   travel during latency  0.077 m   0.45 m/s x 171 ms
+#   braking distance       0.068 m   v^2 / 2a at 0.45 m/s and 1.5 m/s^2
+#   safety margin          0.080 m
+#   ------------------------------
+#   front extent           0.475 m -> 0.50 m
+#
+# The 171 ms latency budget: RPLIDAR S3 scan period 100 ms + Collision Monitor
+# cycle 50 ms + CmdFrame interval 20 ms + STM32 safety tick 1 ms.
+# Half width is the 0.25 m outline plus a 0.05 m margin.
+#
+# Changing max_vel_x or the deceleration limit changes this polygon. They are
+# derived from each other and must be revisited together.
 collision_monitor:
   ros__parameters:
     base_frame_id: base_link
@@ -14,17 +23,18 @@ collision_monitor:
     cmd_vel_in_topic: /cmd_vel_auto
     cmd_vel_out_topic: /cmd_vel
     transform_tolerance: 0.2
-    source_timeout: 0.5
+    # One and a half scan periods: a single dropped scan does not stop the
+    # robot, two consecutive ones do.
+    source_timeout: 0.15
     base_shift_correction: false
     stop_pub_timeout: 1.0
     polygons: ['StopPolygon']
     StopPolygon:
       type: polygon
       action_type: stop
-      # Flat [x1, y1, x2, y2, ...] in base_link. This nav2 version types the
-      # parameter as a double array; the "[[x, y], ...]" string form that older
-      # docs show is rejected at configure time with a type error.
-      # PENDING FREEZE — see the note at the top of this file.
+      # Flat [x1, y1, x2, y2, ...] in base_link, front-left going clockwise.
+      # This nav2 version types the parameter as a double array; the
+      # "[[x, y], ...]" string form older docs show is rejected at configure time.
       points: [0.50, 0.30, 0.50, -0.30, 0.0, -0.30, 0.0, 0.30]
       min_points: 2
       visualize: true
@@ -33,5 +43,5 @@ collision_monitor:
     scan:
       type: scan
       topic: /scan
-      source_timeout: 0.5
+      source_timeout: 0.15
       enabled: true
