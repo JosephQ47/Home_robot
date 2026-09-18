@@ -3,7 +3,7 @@ import threading
 import time
 
 from geometry_msgs.msg import PoseStamped
-from hr_interfaces.action import ExecuteTask
+from hr_interfaces.action import ExecuteArm, ExecuteTask
 from hr_interfaces.msg import (FollowPolicy, MotionPhase, PerceptionControl,
                                RobotStatus, TaskStatus, TrackerPolicy)
 from nav2_msgs.action import NavigateToPose
@@ -11,10 +11,12 @@ from nav_msgs.msg import Odometry
 import rclpy
 from rclpy.executors import ExternalShutdownException
 from rclpy.action import ActionClient, ActionServer, CancelResponse, GoalResponse
+from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.executors import MultiThreadedExecutor
 from rclpy.node import Node
 
-from .state_machine import TaskState, precheck_reason
+from .state_machine import (TaskState, admission_reason, arm_precheck_reason,
+                            is_arm_task, precheck_reason)
 
 
 class TaskManager(Node):
@@ -28,6 +30,10 @@ class TaskManager(Node):
         self.declare_parameter('nav_server_timeout_sec', 5.0)
         self.declare_parameter('follow_desired_distance_m', 0.0)
         self.declare_parameter('follow_minimum_safe_distance_m', 0.0)
+        self.declare_parameter('arm_server_timeout_sec', 5.0)
+        self.declare_parameter('arm_task_timeout_sec', 120.0)
+        self.declare_parameter('accepted_object_classes', [''])
+        self.declare_parameter('accepted_places', [''])
         self.robot_status = None
         self.status_time = 0.0
         self.odom_time = 0.0
@@ -48,20 +54,46 @@ class TaskManager(Node):
         # transitions. Caught by the runtime check in dev_log: with event-only
         # publishing the mux zeroed the base one second into every navigation.
         self.last_phase = None
-        self.create_timer(0.2, self.republish_phase)
-        self.create_subscription(RobotStatus, '/robot_status', self.on_robot_status, 10)
-        self.create_subscription(Odometry, '/odometry/filtered', self.on_odom, 10)
-        self.nav = ActionClient(self, NavigateToPose, '/navigate_to_pose')
-        self.server = ActionServer(self, ExecuteTask, '/task/execute', execute_callback=self.execute,
-                                   goal_callback=self.goal_callback, cancel_callback=self.cancel_callback)
+        # execute() blocks for as long as the task runs, so it must not share a
+        # mutually exclusive group with the subscriptions its own safety checks
+        # read. A MultiThreadedExecutor alone does not achieve that: without an
+        # explicit reentrant group every callback still lands in the node's
+        # default mutually exclusive one, the extra threads never get used, and
+        # /robot_status goes stale under a long task until the task aborts
+        # itself with SAFETY_INVALID. 见 CLAUDE.md「不许在回调里阻塞」。
+        group = ReentrantCallbackGroup()
+        self.create_timer(0.2, self.republish_phase, callback_group=group)
+        self.create_subscription(RobotStatus, '/robot_status', self.on_robot_status, 10,
+                                 callback_group=group)
+        self.create_subscription(Odometry, '/odometry/filtered', self.on_odom, 10,
+                                 callback_group=group)
+        self.nav = ActionClient(self, NavigateToPose, '/navigate_to_pose',
+                                callback_group=group)
+        self.arm = ActionClient(self, ExecuteArm, '/arm/execute', callback_group=group)
+        self.arm_goal = None
+        self.server = ActionServer(self, ExecuteTask, '/task/execute',
+                                   execute_callback=self.execute,
+                                   goal_callback=self.goal_callback,
+                                   cancel_callback=self.cancel_callback,
+                                   callback_group=group)
 
     def goal_callback(self, request):
         if not request.task_id:
             return GoalResponse.REJECT
         with self.task_lock:
-            if self.active is not None or self.reserved_task_id is not None:
+            busy = self.active is not None or self.reserved_task_id is not None
+            # Read both facts under the one lock. task_lock is a plain Lock, so a
+            # helper that re-acquires it here would deadlock the action server.
+            recharging = self.active is not None and self.active.source == 'SYSTEM_BATTERY'
+            reason = admission_reason(request.source, request.task_type, busy, recharging)
+            if reason:
+                self.get_logger().info(
+                    f'refusing task {request.task_id} from {request.source}: {reason}')
                 return GoalResponse.REJECT
-            self.reserved_task_id = request.task_id
+            # ARM_STOP is admissible while busy, but it still must not take the
+            # "active" slot — that belongs to whatever it is stopping.
+            if not busy:
+                self.reserved_task_id = request.task_id
         return GoalResponse.ACCEPT
 
     def cancel_callback(self, _goal):
@@ -152,15 +184,137 @@ class TaskManager(Node):
         self.publish_state(goal, state)
         return result
 
+    def base_stopped(self):
+        """Whether the chassis is settled enough for the arm to move.
+
+        Only what this node can see: the STM32 reports no automatic control and
+        nobody has taken over. hr_arm_controller checks the stricter four-way
+        interlock itself (ARM-1); this is the cheaper gate that keeps an
+        obviously-moving robot from even being asked.
+        """
+        status = self.robot_status
+        if status is None or not self.fresh(self.status_time):
+            return False
+        return not status.remote_override and status.control_source in (
+            RobotStatus.CONTROL_UNKNOWN, RobotStatus.CONTROL_AUTO)
+
+    def execute_arm(self, handle, goal, state, started, is_stop):
+        """Run an arm task. The base stays pinned at ZERO for its whole duration."""
+        timeout = float(self.get_parameter('arm_task_timeout_sec').value)
+        if is_stop:
+            # A stop cancels whatever is running and asks the arm to halt. It
+            # never waits for a slot and never reports failure for being late.
+            if self.nav_goal is not None:
+                self.nav_goal.cancel_goal_async()
+            if self.arm_goal is not None:
+                self.arm_goal.cancel_goal_async()
+            self.send_arm(goal, 'ARM_STOP', wait=False)
+            state.transition('COMPLETED', 'DONE', 'arm stop requested', 1.0)
+            return self.finish(handle, goal, state, True, 'COMPLETED', handle.succeed)
+
+        reason = arm_precheck_reason(self.fresh(self.status_time), self.robot_status,
+                                     self.arm.server_is_ready(), self.base_stopped())
+        if reason:
+            state.transition('REJECTED', 'PRECHECK', 'arm task precheck rejected', code=reason)
+            return self.finish(handle, goal, state, False, 'REJECTED', handle.abort)
+        if goal.task_type == 'ARM_GRASP' and not self.class_accepted(goal.target_class):
+            state.transition('REJECTED', 'PRECHECK',
+                             f'object class "{goal.target_class}" is not accepted',
+                             code='OBJECT_CLASS_UNSUPPORTED')
+            return self.finish(handle, goal, state, False, 'REJECTED', handle.abort)
+        if goal.task_type == 'ARM_RELEASE' and not self.place_accepted(goal.area_id):
+            state.transition('REJECTED', 'PRECHECK',
+                             f'place "{goal.area_id}" is not accepted',
+                             code='PLACE_UNSUPPORTED')
+            return self.finish(handle, goal, state, False, 'REJECTED', handle.abort)
+
+        # The arm may only move while the base is authorised to do nothing.
+        # Publishing ZERO here is what makes hr_motion_mux refuse every automatic
+        # velocity source for the duration, so "the base must not move" is
+        # enforced by the speed chain rather than by everyone remembering.
+        state.transition('RUNNING', 'ZERO', 'arm task active', 0.1)
+        self.publish_controls(goal, False, 'ZERO')
+        feedback = ExecuteTask.Feedback()
+        feedback.status = self.publish_state(goal, state)
+        handle.publish_feedback(feedback)
+
+        arm_timeout = float(self.get_parameter('arm_server_timeout_sec').value)
+        if not self.arm.wait_for_server(timeout_sec=arm_timeout):
+            state.transition('FAILED', 'ZERO',
+                             f'arm action server not available in {arm_timeout:.1f}s',
+                             code='ARM_UNAVAILABLE')
+            return self.finish(handle, goal, state, False, 'FAILED', handle.abort)
+        self.arm_goal = self.send_arm(goal, goal.task_type, wait=True)
+        if self.arm_goal is None or not self.arm_goal.accepted:
+            state.transition('FAILED', 'ZERO', 'arm goal rejected', code='ARM_GOAL_REJECTED')
+            return self.finish(handle, goal, state, False, 'FAILED', handle.abort)
+
+        result_future = self.arm_goal.get_result_async()
+        while not result_future.done():
+            if handle.is_cancel_requested:
+                self.arm_goal.cancel_goal_async()
+                state.transition('CANCELED', 'ZERO', 'task canceled', reason='USER_CANCEL')
+                return self.finish(handle, goal, state, False, 'CANCELED', handle.canceled)
+            if self.robot_status and self.robot_status.remote_override:
+                self.arm_goal.cancel_goal_async()
+                state.transition('INTERRUPTED', 'ZERO', 'remote operator took control',
+                                 reason='REMOTE_OVERRIDE')
+                return self.finish(handle, goal, state, False, 'INTERRUPTED', handle.abort)
+            if not self.fresh(self.status_time) or not self.robot_status.safety_permit:
+                self.arm_goal.cancel_goal_async()
+                state.transition('INTERRUPTED', 'ZERO', 'safety dependency became invalid',
+                                 reason='SAFETY_INVALID')
+                return self.finish(handle, goal, state, False, 'INTERRUPTED', handle.abort)
+            if time.monotonic() - started > timeout:
+                self.arm_goal.cancel_goal_async()
+                state.transition('TIMED_OUT', 'ZERO', 'arm task timed out', reason='TASK_TIMEOUT')
+                return self.finish(handle, goal, state, False, 'TIMED_OUT', handle.abort)
+            time.sleep(0.05)
+
+        outcome = result_future.result().result
+        if not outcome.success:
+            # Carry the arm's own failed stage through, so "it failed" is always
+            # accompanied by "at which step".
+            state.transition('FAILED', outcome.failed_stage or 'ZERO',
+                             outcome.message or 'arm task failed', code='ARM_TASK_FAILED')
+            return self.finish(handle, goal, state, False, 'FAILED', handle.abort)
+        state.transition('COMPLETED', 'DONE', outcome.message or 'arm task completed', 1.0)
+        return self.finish(handle, goal, state, True, 'COMPLETED', handle.succeed)
+
+    def send_arm(self, goal, command, wait):
+        arm_goal = ExecuteArm.Goal()
+        arm_goal.task_id, arm_goal.command = goal.task_id, command
+        arm_goal.object_class, arm_goal.place_id = goal.target_class, goal.area_id
+        future = self.arm.send_goal_async(arm_goal)
+        if not wait:
+            return None
+        while not future.done():
+            time.sleep(0.02)
+        return future.result()
+
+    def class_accepted(self, object_class):
+        allowed = [c for c in self.get_parameter('accepted_object_classes').value if c]
+        return bool(object_class) and (not allowed or object_class in allowed)
+
+    def place_accepted(self, place):
+        allowed = [p for p in self.get_parameter('accepted_places').value if p]
+        return bool(place) and (not allowed or place in allowed)
+
     def execute(self, handle):
         goal = handle.request
-        state = TaskState(goal.task_id)
+        state = TaskState(goal.task_id, goal.source)
+        is_stop = goal.task_type == 'ARM_STOP'
         with self.task_lock:
-            self.active = state
-            self.reserved_task_id = None
+            # ARM_STOP runs alongside whatever it is stopping; it must not evict
+            # that task from the active slot or the stopped task loses its state.
+            if not is_stop:
+                self.active = state
+                self.reserved_task_id = None
         self.publish_state(goal, state)
         started = time.monotonic()
         try:
+            if is_arm_task(goal.task_type):
+                return self.execute_arm(handle, goal, state, started, is_stop)
             reason = precheck_reason(self.fresh(self.status_time), self.fresh(self.odom_time),
                                      self.robot_status, self.nav.server_is_ready())
             if reason:
@@ -234,10 +388,12 @@ class TaskManager(Node):
         finally:
             self.publish_controls(goal, False, state.status)
             self.publish_state(goal, state)
-            self.nav_goal = None
-            with self.task_lock:
-                self.active = None
-                self.reserved_task_id = None
+            self.arm_goal = None
+            if not is_stop:
+                self.nav_goal = None
+                with self.task_lock:
+                    self.active = None
+                    self.reserved_task_id = None
 
 
 def main(args=None):

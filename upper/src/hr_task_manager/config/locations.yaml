@@ -1,1 +1,10 @@
-locations: {}  # TBD after a map is accepted.
+# Named goals in the map frame, on the accepted single-storey home map.
+# The web console offers exactly these; anything not listed here is refused.
+locations:
+  客厅:   {x: 1.80, y: 2.40, yaw: 0.00}
+  厨房:   {x: 4.60, y: 3.80, yaw: 1.57}
+  走廊:   {x: 4.20, y: 1.60, yaw: 3.14}
+  卧室:   {x: 1.40, y: -1.20, yaw: -1.57}
+  书房:   {x: 4.40, y: -1.40, yaw: 0.00}
+  充电桩: {x: 0.30, y: 0.20, yaw: 0.00}
+  工作位: {x: 2.60, y: 3.10, yaw: 1.57}

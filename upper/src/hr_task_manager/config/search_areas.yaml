@@ -1,1 +1,39 @@
-search_areas: {}  # TBD after map and room boundary acceptance.
+# Search regions on the accepted home map. A target found outside its own
+# region is reported but not approached, so the boundaries matter.
+#
+# Search points are spaced about 1.5 m apart, roughly the distance at which the
+# Gemini 2 still resolves a mug-sized object across its 91 degree field.
+search_areas:
+  客厅:
+    map_id: home1
+    boundary: [[0.0, 0.8], [3.6, 0.8], [3.6, 4.6], [0.0, 4.6]]
+    points:
+      - {x: 1.00, y: 1.60, yaw: 0.00}
+      - {x: 2.60, y: 1.60, yaw: 1.57}
+      - {x: 2.60, y: 3.40, yaw: 3.14}
+      - {x: 1.00, y: 3.40, yaw: -1.57}
+  厨房:
+    map_id: home1
+    boundary: [[3.8, 2.6], [6.2, 2.6], [6.2, 4.6], [3.8, 4.6]]
+    points:
+      - {x: 4.40, y: 3.20, yaw: 0.00}
+      - {x: 5.60, y: 3.20, yaw: 1.57}
+      - {x: 5.60, y: 4.10, yaw: 3.14}
+  走廊:
+    map_id: home1
+    boundary: [[3.8, 0.6], [6.2, 0.6], [6.2, 2.4], [3.8, 2.4]]
+    points:
+      - {x: 4.40, y: 1.40, yaw: 0.00}
+      - {x: 5.60, y: 1.40, yaw: 3.14}
+  卧室:
+    map_id: home1
+    boundary: [[0.0, -2.6], [3.0, -2.6], [3.0, 0.6], [0.0, 0.6]]
+    points:
+      - {x: 1.00, y: -0.60, yaw: 0.00}
+      - {x: 2.20, y: -1.80, yaw: 1.57}
+  书房:
+    map_id: home1
+    boundary: [[3.2, -2.6], [6.2, -2.6], [6.2, 0.4], [3.2, 0.4]]
+    points:
+      - {x: 4.00, y: -0.80, yaw: 0.00}
+      - {x: 5.40, y: -1.90, yaw: 1.57}

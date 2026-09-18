@@ -1,3 +1,7 @@
 motion_phase:
+  # Every switch between automatic velocity sources passes through zero first.
   zero_before_transition: true
-  transition_timeout_sec: TBD
+  # Matches hr_motion_mux's zero_hold_ms: 0.45 m/s bleeds off in 0.30 s at the
+  # 1.5 m/s^2 deceleration limit, so the previous source is fully stopped before
+  # the next one is allowed through.
+  transition_timeout_sec: 0.3

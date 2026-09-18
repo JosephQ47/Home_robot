@@ -1,1 +1,20 @@
-routes: {}  # TBD after map and waypoint acceptance.
+# Ordered patrol routes over the accepted home map. Each stop names a location
+# from locations.yaml and how long to observe there before moving on.
+#
+# Dwell is 8 s: long enough for the detector to accumulate the three consecutive
+# confirmations a target needs, short enough that a five-stop round stays under
+# two minutes of standing still.
+routes:
+  夜间巡检:
+    map_id: home1
+    stops:
+      - {location: 客厅, dwell_sec: 8}
+      - {location: 走廊, dwell_sec: 8}
+      - {location: 厨房, dwell_sec: 8}
+      - {location: 书房, dwell_sec: 8}
+      - {location: 卧室, dwell_sec: 8}
+  厨房巡检:
+    map_id: home1
+    stops:
+      - {location: 厨房, dwell_sec: 12}
+      - {location: 走廊, dwell_sec: 6}
