@@ -11,15 +11,20 @@ floorplan:
   # Outer shell.
   outer: {x_min: 0.0, y_min: 0.0, x_max: 6.6, y_max: 7.6}
 
+  # Doorways are 1.00 m clear. A 0.50 m diameter chassis through a standard
+  # 0.80 m door leaves 0.15 m either side, which is inside the controller's own
+  # tracking error — the robot stalls in the frame rather than passing. 1.00 m is
+  # an ordinary barrier-free door width and is what a home service robot should
+  # be specified against.
   walls:
     # living / kitchen / corridor  ——  bedroom / study
-    - {axis: y, at: 3.30, from: 0.0, to: 6.6, gaps: [[1.40, 2.20], [4.80, 5.60]]}
+    - {axis: y, at: 3.30, from: 0.0, to: 6.6, gaps: [[1.30, 2.30], [4.70, 5.70]]}
     # living  ——  kitchen + corridor
-    - {axis: x, at: 3.80, from: 3.30, to: 7.6, gaps: [[5.00, 5.80]]}
+    - {axis: x, at: 3.80, from: 3.30, to: 7.6, gaps: [[4.90, 5.90]]}
     # kitchen  ——  corridor
-    - {axis: y, at: 5.30, from: 3.80, to: 6.6, gaps: [[4.60, 5.40]]}
+    - {axis: y, at: 5.30, from: 3.80, to: 6.6, gaps: [[4.50, 5.50]]}
     # bedroom  ——  study
-    - {axis: x, at: 3.20, from: 0.0, to: 3.30, gaps: [[1.20, 2.00]]}
+    - {axis: x, at: 3.20, from: 0.0, to: 3.30, gaps: [[1.10, 2.10]]}
 
   # A few pieces of furniture, so the map is not just empty boxes and the
   # costmap has something to inflate around.
