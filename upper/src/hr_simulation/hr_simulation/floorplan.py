@@ -78,6 +78,31 @@ def ray_hit(ox, oy, angle, segments, max_range):
     return best
 
 
+def point_segment_distance(px, py, s: Segment) -> float:
+    """Shortest distance from a point to a wall segment."""
+    dx, dy = s.x2 - s.x1, s.y2 - s.y1
+    length2 = dx * dx + dy * dy
+    if length2 < 1e-12:
+        return math.hypot(px - s.x1, py - s.y1)
+    t = max(0.0, min(1.0, ((px - s.x1) * dx + (py - s.y1) * dy) / length2))
+    return math.hypot(px - (s.x1 + t * dx), py - (s.y1 + t * dy))
+
+
+def clearance(px, py, segments) -> float:
+    """Distance from a point to the nearest wall."""
+    return min((point_segment_distance(px, py, s) for s in segments), default=float('inf'))
+
+
+def blocked(px, py, segments, radius: float) -> bool:
+    """Whether a body of `radius` centred at (px, py) would be inside a wall.
+
+    Without this a simulated robot drives straight through walls: the laser then
+    observes the world from inside them, and the resulting map looks like a
+    tuning problem rather than what it is.
+    """
+    return clearance(px, py, segments) < radius
+
+
 def scan(pose, segments, angle_min, angle_max, increment, max_range):
     """A full sweep from `pose` (x, y, yaw), in the sensor's own frame order."""
     x, y, yaw = pose

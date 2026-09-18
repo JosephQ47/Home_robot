@@ -149,3 +149,28 @@ def test_scan_from_every_reachable_pose_stays_inside_the_plan():
                        if ray_hit(gx, gy, i * math.pi / 36, segs, 40.0) >= 40.0]
             assert not escaped, f'rays escaped from ({gx:.1f}, {gy:.1f}): {escaped[:4]}'
     assert checked > 100, 'the sweep did not actually reach inside the plan'
+
+
+def test_point_segment_distance_handles_ends_and_middle():
+    from hr_simulation.floorplan import point_segment_distance
+    wall = Segment(0.0, 0.0, 10.0, 0.0)
+    assert point_segment_distance(5.0, 3.0, wall) == pytest.approx(3.0)   # beside it
+    assert point_segment_distance(-4.0, 0.0, wall) == pytest.approx(4.0)  # past the start
+    assert point_segment_distance(14.0, 0.0, wall) == pytest.approx(4.0)  # past the end
+    assert point_segment_distance(3.0, 0.0, wall) == pytest.approx(0.0)   # on it
+
+
+def test_blocked_refuses_a_body_overlapping_a_wall():
+    from hr_simulation.floorplan import blocked
+    assert blocked(0.1, 5.0, ROOM, 0.25)        # 0.1 m from the wall, radius 0.25
+    assert not blocked(5.0, 5.0, ROOM, 0.25)    # middle of the room
+
+
+def test_a_doorway_is_too_narrow_for_an_oversized_body():
+    from hr_simulation.floorplan import blocked
+    plan = {'outer': {'x_min': 0, 'y_min': 0, 'x_max': 10, 'y_max': 10},
+            'walls': [{'axis': 'y', 'at': 5.0, 'from': 0.0, 'to': 10.0,
+                       'gaps': [[4.6, 5.4]]}]}       # a 0.8 m door
+    segs = build(plan)
+    assert not blocked(5.0, 5.0, segs, 0.35)     # a 0.7 m body fits
+    assert blocked(5.0, 5.0, segs, 0.45)         # a 0.9 m body does not

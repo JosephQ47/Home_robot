@@ -27,7 +27,7 @@ from sensor_msgs.msg import Imu, LaserScan
 from tf2_ros import StaticTransformBroadcaster, TransformBroadcaster
 import yaml
 
-from .floorplan import build, scan as cast_scan
+from .floorplan import blocked, build, clearance, scan as cast_scan
 
 
 def wrap(a):
@@ -57,6 +57,9 @@ class PlanarSim(Node):
         self.declare_parameter('laser_height', 0.28)
         self.declare_parameter('odom_noise', 0.004)
         self.declare_parameter('publish_map_tf', False)
+        # Half the chassis width. A step that would put the body inside a wall
+        # is refused rather than executed.
+        self.declare_parameter('robot_radius', 0.25)
 
         path = str(self.get_parameter('floorplan_file').value)
         if not path:
@@ -76,6 +79,7 @@ class PlanarSim(Node):
         # slam_toolbox's message filter drops it — which looks like a mapping
         # quality problem and is really a timestamp race.
         self.stamp = None
+        self.collisions = 0
 
         self.scan_pub = self.create_publisher(LaserScan, '/scan', 10)
         self.odom_pub = self.create_publisher(Odometry, '/wheel/odom_raw', 20)
@@ -138,8 +142,20 @@ class PlanarSim(Node):
                             float(self.get_parameter('accel_theta').value),
                             float(self.get_parameter('accel_theta').value))
 
-        self.x += self.vx * math.cos(self.yaw) * self.dt
-        self.y += self.vx * math.sin(self.yaw) * self.dt
+        radius = float(self.get_parameter('robot_radius').value)
+        nx = self.x + self.vx * math.cos(self.yaw) * self.dt
+        ny = self.y + self.vx * math.sin(self.yaw) * self.dt
+        if blocked(nx, ny, self.segments, radius):
+            # Refuse the translation and kill the forward speed. Rotation is still
+            # allowed so the robot can turn away instead of being stuck forever.
+            self.collisions += 1
+            self.vx = 0.0
+            if self.collisions % 30 == 1:
+                self.get_logger().warning(
+                    f'blocked at ({self.x:.2f}, {self.y:.2f}): '
+                    f'wall {clearance(self.x, self.y, self.segments):.2f} m away')
+        else:
+            self.x, self.y = nx, ny
         self.yaw = wrap(self.yaw + self.wz * self.dt)
 
         # Odometry drifts: a perfect estimate would hide every localisation bug.
@@ -233,6 +249,7 @@ class PlanarSim(Node):
             KeyValue(key='true_pose',
                      value=f'{self.x:.2f}, {self.y:.2f}, {math.degrees(self.yaw):.0f}deg'),
             KeyValue(key='vx', value=f'{self.vx:.3f}'),
+            KeyValue(key='collisions', value=str(self.collisions)),
         ]
         array = DiagnosticArray(status=[status])
         array.header.stamp = self.get_clock().now().to_msg()
