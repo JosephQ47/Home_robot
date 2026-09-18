@@ -1,3 +1,12 @@
+# The last gate before /cmd_vel reaches hr_bridge and the STM32.
+#
+# The stop zone below is a PLACEHOLDER, not a frozen value. Sizing it needs four
+# measured numbers (技术方案 §10.4): the robot outline, the total latency from
+# scan to wheel, the measured braking distance, and a safety margin. Until those
+# exist the launch stays off by default, and this file keeps a small, obviously
+# conservative rectangle so the node can at least start and be inspected — an
+# empty polygon makes it fail configuration, which hides the whole node from a
+# topology check rather than making the gap visible.
 collision_monitor:
   ros__parameters:
     base_frame_id: base_link
@@ -6,17 +15,21 @@ collision_monitor:
     cmd_vel_out_topic: /cmd_vel
     transform_tolerance: 0.2
     source_timeout: 0.5
+    base_shift_correction: false
     stop_pub_timeout: 1.0
-    polygons: [StopPolygon]
+    polygons: ['StopPolygon']
     StopPolygon:
       type: polygon
       action_type: stop
-      # Polygon is deliberately invalid until footprint, latency and braking tests freeze it.
-      points: "[]"
-      min_points: 4
+      # Flat [x1, y1, x2, y2, ...] in base_link. This nav2 version types the
+      # parameter as a double array; the "[[x, y], ...]" string form that older
+      # docs show is rejected at configure time with a type error.
+      # PENDING FREEZE — see the note at the top of this file.
+      points: [0.50, 0.30, 0.50, -0.30, 0.0, -0.30, 0.0, 0.30]
+      min_points: 2
       visualize: true
       polygon_pub_topic: /collision_monitor/stop_polygon
-    observation_sources: [scan]
+    observation_sources: ['scan']
     scan:
       type: scan
       topic: /scan

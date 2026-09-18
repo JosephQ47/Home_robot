@@ -175,15 +175,16 @@ class ArmPerceptionNode(Node):
         for detection in msg.detections:
             if not detection.results:
                 continue
-            hypothesis = detection.results[0]
-            object_class = getattr(hypothesis, 'id', '') or \
-                getattr(getattr(hypothesis, 'hypothesis', None), 'class_id', '')
-            score = getattr(hypothesis, 'score', 0.0) or \
-                getattr(getattr(hypothesis, 'hypothesis', None), 'score', 0.0)
+            # vision_msgs nests both of these: results[i].hypothesis.class_id and
+            # bbox.center.position.x. Reaching for detection.bbox.center.x throws,
+            # and it is the same shape hr_target_tracker already consumes.
+            best = max(detection.results, key=lambda item: item.hypothesis.score)
+            object_class = best.hypothesis.class_id
+            score = best.hypothesis.score
             if self.classes and object_class not in self.classes:
                 reasons.append('class_not_accepted')
                 continue
-            bbox = (detection.bbox.center.x, detection.bbox.center.y,
+            bbox = (detection.bbox.center.position.x, detection.bbox.center.position.y,
                     detection.bbox.size_x, detection.bbox.size_y)
             samples = depth_patch(self.depth, *bbox)
             if samples is None:

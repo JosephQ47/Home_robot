@@ -4,6 +4,12 @@ hr_dock_pose_adapter:
   ros__parameters:
     dock_id: home_dock
     tag_id: 0
+    tag_family: tag36h11
+    # apriltag_ros publishes each tag's pose as a TF frame named like this.
+    tag_frame_template: '{family}:{id}'
+    # Pixel-level gates applied before TF is consulted.
+    min_decision_margin: 30.0
+    max_hamming: 0
     # [x, y, yaw] from the tag frame to the point where the spring contacts meet.
     tag_to_contact_xyyaw: [0.0, 0.0, 0.0]
     dock_frame_id: odom
