@@ -5,49 +5,72 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>家庭服务机器人 · Home Robot</title>
 <meta name="description" content="RK3588 + STM32F407 双控分层架构的家庭服务机器人：ROS 2 Humble、四轮差速底盘、自主导航与 AprilTag 回充，核心是一条 fail-closed 的自动速度安全链。">
+<meta property="og:title" content="家庭服务机器人 · Home Robot">
+<meta property="og:description" content="让每一条自动速度都只有一条路可走。RK3588 + STM32F407 · ROS 2 Humble · 22 个包 · 173 条安全规则测试。">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🤖</text></svg>">
 <style>
   :root {
     --bg: #ffffff;
     --bg-soft: #f6f8fa;
-    --ink: #1f2328;
-    --muted: #57606a;
-    --line: #d8dee4;
+    --bg-deep: #eef1f5;
+    --ink: #11161d;
+    --ink-soft: #3d4754;
+    --muted: #5b6672;
+    --line: #dde3ea;
+    --line-soft: #eaeef3;
     --accent: #1a73e8;
-    --accent-soft: #e3eefc;
+    --accent-2: #6750a4;
+    --accent-soft: #e6effd;
     --danger: #c5221f;
-    --danger-soft: #fce8e6;
+    --danger-soft: #fdeceb;
     --ok: #1a7f37;
-    --ok-soft: #dafbe1;
+    --ok-soft: #e6f6ec;
     --warn: #9a6700;
-    --warn-soft: #fff8c5;
-    --shadow: 0 1px 3px rgba(31, 35, 40, .08), 0 8px 24px rgba(31, 35, 40, .06);
-    --radius: 12px;
+    --warn-soft: #fff8e0;
+    --glow: rgba(26, 115, 232, .18);
+    --shadow-s: 0 1px 2px rgba(16, 24, 40, .05), 0 1px 3px rgba(16, 24, 40, .06);
+    --shadow-m: 0 4px 12px rgba(16, 24, 40, .07), 0 12px 32px rgba(16, 24, 40, .06);
+    --shadow-l: 0 8px 24px rgba(16, 24, 40, .10), 0 24px 64px rgba(16, 24, 40, .08);
+    --radius: 14px;
     --maxw: 1180px;
   }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
-      --bg: #0d1117;
-      --bg-soft: #161b22;
-      --ink: #e6edf3;
-      --muted: #9198a1;
-      --line: #30363d;
-      --accent: #58a6ff;
+      --bg: #0b0f14;
+      --bg-soft: #141a22;
+      --bg-deep: #1b232d;
+      --ink: #e8eef6;
+      --ink-soft: #c2ccd8;
+      --muted: #8c99a8;
+      --line: #263039;
+      --line-soft: #1d252e;
+      --accent: #5aa2ff;
+      --accent-2: #b39ddb;
       --accent-soft: #10243e;
-      --danger: #f85149;
-      --danger-soft: #2d1416;
-      --ok: #3fb950;
+      --danger: #ff6b63;
+      --danger-soft: #2b1615;
+      --ok: #4ac26b;
       --ok-soft: #10281a;
-      --warn: #d29922;
-      --warn-soft: #2c2213;
-      --shadow: 0 1px 3px rgba(1, 4, 9, .4), 0 8px 24px rgba(1, 4, 9, .3);
+      --warn: #e3b341;
+      --warn-soft: #2a2213;
+      --glow: rgba(90, 162, 255, .22);
+      --shadow-s: 0 1px 2px rgba(0, 0, 0, .5);
+      --shadow-m: 0 4px 12px rgba(0, 0, 0, .45), 0 12px 32px rgba(0, 0, 0, .35);
+      --shadow-l: 0 8px 24px rgba(0, 0, 0, .5), 0 24px 64px rgba(0, 0, 0, .4);
     }
   }
   :root[data-theme="dark"] {
-    --bg: #0d1117; --bg-soft: #161b22; --ink: #e6edf3; --muted: #9198a1;
-    --line: #30363d; --accent: #58a6ff; --accent-soft: #10243e;
-    --danger: #f85149; --danger-soft: #2d1416; --ok: #3fb950; --ok-soft: #10281a;
-    --warn: #d29922; --warn-soft: #2c2213;
-    --shadow: 0 1px 3px rgba(1, 4, 9, .4), 0 8px 24px rgba(1, 4, 9, .3);
+    --bg: #0b0f14; --bg-soft: #141a22; --bg-deep: #1b232d;
+    --ink: #e8eef6; --ink-soft: #c2ccd8; --muted: #8c99a8;
+    --line: #263039; --line-soft: #1d252e;
+    --accent: #5aa2ff; --accent-2: #b39ddb; --accent-soft: #10243e;
+    --danger: #ff6b63; --danger-soft: #2b1615;
+    --ok: #4ac26b; --ok-soft: #10281a;
+    --warn: #e3b341; --warn-soft: #2a2213;
+    --glow: rgba(90, 162, 255, .22);
+    --shadow-s: 0 1px 2px rgba(0, 0, 0, .5);
+    --shadow-m: 0 4px 12px rgba(0, 0, 0, .45), 0 12px 32px rgba(0, 0, 0, .35);
+    --shadow-l: 0 8px 24px rgba(0, 0, 0, .5), 0 24px 64px rgba(0, 0, 0, .4);
   }
 
   * { box-sizing: border-box; }
@@ -55,189 +78,385 @@
   body {
     margin: 0; background: var(--bg); color: var(--ink);
     font: 16px/1.72 -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans CJK SC",
-          "Source Han Sans SC", "Microsoft YaHei", Helvetica, Arial, sans-serif;
-    -webkit-font-smoothing: antialiased;
+          "Source Han Sans SC", "PingFang SC", "Microsoft YaHei", Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility;
+    overflow-x: hidden;
   }
-  .wrap { max-width: var(--maxw); margin: 0 auto; padding: 0 16px; }
+  .wrap { max-width: var(--maxw); margin: 0 auto; padding: 0 20px; }
   a { color: var(--accent); text-decoration: none; }
   a:hover { text-decoration: underline; }
-  code, .mono {
-    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
-    font-size: .92em;
-  }
-  code { background: var(--bg-soft); padding: .12em .38em; border-radius: 5px; }
+  code, .mono { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+  code { font-size: .9em; background: var(--bg-soft); padding: .12em .42em;
+         border-radius: 6px; border: 1px solid var(--line-soft);
+         /* Topic names have no spaces; without this they push the page wider
+            than a phone screen instead of wrapping. */
+         overflow-wrap: anywhere; word-break: break-word; }
 
+  /* ---------- nav ---------- */
   header.top {
-    position: sticky; top: 0; z-index: 20; background: color-mix(in srgb, var(--bg) 88%, transparent);
-    backdrop-filter: blur(10px); border-bottom: 1px solid var(--line);
+    position: sticky; top: 0; z-index: 50;
+    background: color-mix(in srgb, var(--bg) 82%, transparent);
+    backdrop-filter: saturate(160%) blur(14px);
+    border-bottom: 1px solid transparent; transition: border-color .25s, box-shadow .25s;
   }
-  .nav { display: flex; align-items: center; gap: 22px; height: 58px; }
-  .brand { font-weight: 700; letter-spacing: .2px; margin-right: auto; }
-  .nav a.link { color: var(--muted); font-size: 14.5px; }
+  header.top.stuck { border-bottom-color: var(--line); box-shadow: var(--shadow-s); }
+  .nav { display: flex; align-items: center; gap: 24px; height: 60px; }
+  .brand { font-weight: 800; letter-spacing: -.01em; margin-right: auto; display: flex;
+           align-items: center; gap: 9px; }
+  .brand .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--ok);
+                box-shadow: 0 0 0 0 var(--ok); animation: pulse 2.6s infinite; }
+  @keyframes pulse { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--ok) 60%, transparent); }
+                     70% { box-shadow: 0 0 0 9px transparent; } 100% { box-shadow: 0 0 0 0 transparent; } }
+  .nav a.link { color: var(--muted); font-size: 14.5px; font-weight: 500; position: relative; }
+  .nav a.link::after { content: ''; position: absolute; left: 0; right: 100%; bottom: -4px;
+                       height: 2px; background: var(--accent); transition: right .25s; border-radius: 2px; }
   .nav a.link:hover { color: var(--ink); text-decoration: none; }
-  .theme-btn {
-    border: 1px solid var(--line); background: var(--bg-soft); color: var(--muted);
-    border-radius: 7px; height: 32px; padding: 0 11px; cursor: pointer; font-size: 13px;
-  }
-  .theme-btn:hover { color: var(--ink); }
+  .nav a.link:hover::after { right: 0; }
+  .icon-btn { border: 1px solid var(--line); background: var(--bg-soft); color: var(--muted);
+              border-radius: 9px; height: 34px; width: 34px; display: inline-grid;
+              place-items: center; cursor: pointer; transition: .2s; }
+  .icon-btn:hover { color: var(--ink); border-color: var(--muted); transform: translateY(-1px); }
 
-  .hero { padding: 68px 0 44px; }
-  .hero h1 { font-size: clamp(30px, 5vw, 46px); line-height: 1.22; margin: 0 0 14px; letter-spacing: -.5px; }
-  .hero .sub { font-size: clamp(16px, 2vw, 19px); color: var(--muted); max-width: 48em; margin: 0 0 26px; }
-  .badges { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 28px; }
-  .badge {
-    font-size: 12.5px; padding: 5px 11px; border-radius: 999px;
-    background: var(--bg-soft); border: 1px solid var(--line); color: var(--muted);
+  /* ---------- hero ---------- */
+  .hero { position: relative; padding: 84px 0 56px; overflow: hidden; }
+  .hero::before {
+    content: ''; position: absolute; inset: -40% -20% auto -20%; height: 720px; z-index: -1;
+    background:
+      radial-gradient(1000px 420px at 22% 18%, var(--glow), transparent 68%),
+      radial-gradient(760px 340px at 82% 8%, color-mix(in srgb, var(--accent-2) 16%, transparent), transparent 66%);
   }
-  .badge.on { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
-  .cta { display: flex; flex-wrap: wrap; gap: 11px; }
-  .btn {
-    display: inline-flex; align-items: center; gap: 7px; height: 42px; padding: 0 18px;
-    border-radius: 9px; font-size: 14.5px; font-weight: 600; border: 1px solid var(--line);
-    background: var(--bg-soft); color: var(--ink);
+  .hero::after {
+    content: ''; position: absolute; inset: 0; z-index: -1; opacity: .5;
+    background-image: linear-gradient(var(--line-soft) 1px, transparent 1px),
+                      linear-gradient(90deg, var(--line-soft) 1px, transparent 1px);
+    background-size: 46px 46px;
+    mask-image: radial-gradient(760px 340px at 30% 26%, #000, transparent 72%);
+    -webkit-mask-image: radial-gradient(760px 340px at 30% 26%, #000, transparent 72%);
   }
-  .btn:hover { text-decoration: none; border-color: var(--muted); }
-  .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
-  .btn.primary:hover { filter: brightness(1.08); }
+  .eyebrow { display: inline-flex; align-items: center; gap: 8px; font-size: 13px;
+             font-weight: 600; color: var(--accent); background: var(--accent-soft);
+             border: 1px solid color-mix(in srgb, var(--accent) 28%, transparent);
+             padding: 5px 13px; border-radius: 999px; margin-bottom: 20px; }
+  .hero h1 { font-size: clamp(32px, 5.6vw, 58px); line-height: 1.14; margin: 0 0 18px;
+             letter-spacing: -.028em; font-weight: 800; }
+  .hero h1 .grad {
+    background: linear-gradient(100deg, var(--accent), var(--accent-2) 70%);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .hero .sub { font-size: clamp(16px, 1.9vw, 19.5px); color: var(--ink-soft);
+               max-width: 44em; margin: 0 0 30px; line-height: 1.68; }
+  .badges { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 30px; }
+  .badge { font-size: 12.5px; font-weight: 500; padding: 5px 12px; border-radius: 999px;
+           background: var(--bg-soft); border: 1px solid var(--line); color: var(--muted); }
+  .badge.on { background: var(--accent-soft); border-color: color-mix(in srgb, var(--accent) 34%, transparent);
+              color: var(--accent); font-weight: 600; }
+  .cta { display: flex; flex-wrap: wrap; gap: 12px; }
+  .btn { display: inline-flex; align-items: center; gap: 8px; height: 46px; padding: 0 22px;
+         border-radius: 11px; font-size: 15px; font-weight: 600; border: 1px solid var(--line);
+         background: var(--bg-soft); color: var(--ink); transition: .22s; }
+  .btn:hover { text-decoration: none; transform: translateY(-2px); box-shadow: var(--shadow-m); }
+  .btn.primary { background: linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 72%, var(--accent-2)));
+                 border-color: transparent; color: #fff; }
 
-  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 14px; margin: 40px 0 0; }
-  .stat { background: var(--bg-soft); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px 18px; }
-  .stat .n { font-size: 27px; font-weight: 700; line-height: 1.2; }
-  .stat .l { font-size: 13px; color: var(--muted); margin-top: 3px; }
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(146px, 1fr));
+           gap: 14px; margin-top: 46px; }
+  .stat { background: var(--bg-soft); border: 1px solid var(--line); border-radius: var(--radius);
+          padding: 18px 20px; position: relative; overflow: hidden; transition: .25s; }
+  .stat:hover { transform: translateY(-3px); box-shadow: var(--shadow-m); border-color: color-mix(in srgb, var(--accent) 40%, var(--line)); }
+  .stat::after { content: ''; position: absolute; inset: auto 0 0 0; height: 2px;
+                 background: linear-gradient(90deg, var(--accent), var(--accent-2)); opacity: .0; transition: opacity .25s; }
+  .stat:hover::after { opacity: 1; }
+  .stat .n { font-size: 30px; font-weight: 800; line-height: 1.15; letter-spacing: -.02em;
+             font-variant-numeric: tabular-nums; }
+  .stat .l { font-size: 12.8px; color: var(--muted); margin-top: 4px; }
 
-  section { padding: 56px 0; border-top: 1px solid var(--line); }
-  section > .wrap > h2 { font-size: clamp(22px, 3vw, 29px); margin: 0 0 10px; letter-spacing: -.3px; }
-  section > .wrap > .lede { color: var(--muted); max-width: 52em; margin: 0 0 30px; }
+  /* ---------- sections ---------- */
+  section { padding: 76px 0; border-top: 1px solid var(--line-soft); }
+  .sec-tag { font-size: 12.5px; font-weight: 700; letter-spacing: .09em; text-transform: uppercase;
+             color: var(--accent); margin-bottom: 10px; }
+  section h2 { font-size: clamp(23px, 3.2vw, 33px); margin: 0 0 12px; letter-spacing: -.022em;
+               font-weight: 800; }
+  .lede { color: var(--ink-soft); max-width: 50em; margin: 0 0 34px; font-size: 16.5px; }
 
-  .figure {
-    background: var(--bg-soft); border: 1px solid var(--line); border-radius: var(--radius);
-    padding: 14px; box-shadow: var(--shadow); margin: 0 0 14px;
-  }
-  .figure img { display: block; width: 100%; height: auto; border-radius: 7px; background: #fff; }
-  .caption { font-size: 13.5px; color: var(--muted); margin: 0 0 30px; }
+  .figure { background: var(--bg-soft); border: 1px solid var(--line); border-radius: var(--radius);
+            padding: 16px; box-shadow: var(--shadow-m); margin: 0 0 14px; }
+  .figure img { display: block; width: 100%; height: auto; border-radius: 9px; background: #fff; }
+  .caption { font-size: 14px; color: var(--muted); margin: 0 0 34px; }
 
-  .pull {
-    border-left: 3px solid var(--accent); background: var(--accent-soft);
-    padding: 15px 20px; border-radius: 0 9px 9px 0; margin: 0 0 28px;
-    font-size: 17px; color: var(--ink);
-  }
+  .pull { border-left: 3px solid var(--accent);
+          background: linear-gradient(90deg, var(--accent-soft), transparent 92%);
+          padding: 17px 22px; border-radius: 0 11px 11px 0; margin: 0 0 32px;
+          font-size: 17.5px; color: var(--ink); }
 
-  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(270px, 1fr)); gap: 16px; }
-  .card {
-    background: var(--bg-soft); border: 1px solid var(--line);
-    border-radius: var(--radius); padding: 20px;
-  }
-  .card h3 { margin: 0 0 8px; font-size: 16.5px; }
-  .card p { margin: 0; color: var(--muted); font-size: 14.5px; }
-  .card .tag {
-    display: inline-block; font-size: 11.5px; font-weight: 700; padding: 2px 9px;
-    border-radius: 999px; margin-bottom: 9px;
-  }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(272px, 1fr)); gap: 16px; }
+  .card { background: var(--bg-soft); border: 1px solid var(--line); border-radius: var(--radius);
+          padding: 22px; transition: .25s; }
+  .card:hover { transform: translateY(-3px); box-shadow: var(--shadow-m); }
+  .card h3 { margin: 0 0 9px; font-size: 17px; font-weight: 700; }
+  .card p { margin: 0; color: var(--muted); font-size: 14.6px; }
+  .tag { display: inline-block; font-size: 11.5px; font-weight: 700; padding: 3px 10px;
+         border-radius: 999px; margin-bottom: 10px; letter-spacing: .01em; }
   .tag.ok { background: var(--ok-soft); color: var(--ok); }
-  .tag.warn { background: var(--warn-soft); color: var(--warn); }
   .tag.danger { background: var(--danger-soft); color: var(--danger); }
   .tag.info { background: var(--accent-soft); color: var(--accent); }
 
-  .shots { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
-  .shot { background: var(--bg-soft); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+  /* ---------- interactive demo ---------- */
+  .demo { background: var(--bg-soft); border: 1px solid var(--line); border-radius: var(--radius);
+          padding: 22px; box-shadow: var(--shadow-m); }
+  .demo-head { display: flex; flex-wrap: wrap; gap: 14px; align-items: center;
+               justify-content: space-between; margin-bottom: 18px; }
+  .demo-title { font-weight: 700; font-size: 15.5px; }
+  .seg { display: inline-flex; background: var(--bg); border: 1px solid var(--line);
+         border-radius: 10px; padding: 3px; gap: 3px; }
+  .seg button { border: 0; background: transparent; color: var(--muted); font: inherit;
+                font-size: 13.5px; font-weight: 600; padding: 7px 14px; border-radius: 7px;
+                cursor: pointer; transition: .18s; }
+  .seg button[aria-pressed="true"] { background: var(--accent); color: #fff; }
+  .toggle { display: inline-flex; align-items: center; gap: 9px; font-size: 13.5px;
+            font-weight: 600; color: var(--muted); cursor: pointer; user-select: none; }
+  .toggle input { appearance: none; width: 40px; height: 23px; border-radius: 999px;
+                  background: var(--line); position: relative; cursor: pointer; transition: .22s; }
+  .toggle input::after { content: ''; position: absolute; top: 3px; left: 3px; width: 17px;
+                         height: 17px; border-radius: 50%; background: #fff; transition: .22s;
+                         box-shadow: var(--shadow-s); }
+  .toggle input:checked { background: var(--danger); }
+  .toggle input:checked::after { transform: translateX(17px); }
+  .chain-svg { width: 100%; height: auto; display: block; }
+  .verdict { margin-top: 16px; padding: 14px 18px; border-radius: 11px; font-size: 14.6px;
+             border: 1px solid; display: flex; gap: 11px; align-items: flex-start; transition: .25s; }
+  .verdict.go { background: var(--ok-soft); border-color: color-mix(in srgb, var(--ok) 35%, transparent); color: var(--ok); }
+  .verdict.stop { background: var(--danger-soft); border-color: color-mix(in srgb, var(--danger) 35%, transparent); color: var(--danger); }
+  .verdict b { display: block; margin-bottom: 2px; }
+  .verdict span { color: var(--ink-soft); font-weight: 400; }
+
+  /* ---------- stop zone calculator ---------- */
+  .calc { display: grid; grid-template-columns: 300px 1fr; gap: 26px; align-items: start; }
+  .sliders { display: grid; gap: 20px; }
+  .slider label { display: flex; justify-content: space-between; font-size: 13.8px;
+                  font-weight: 600; margin-bottom: 9px; }
+  .slider label span { color: var(--accent); font-variant-numeric: tabular-nums; }
+  .slider input[type=range] { width: 100%; appearance: none; height: 5px; border-radius: 3px;
+                              background: var(--line); outline: none; }
+  .slider input[type=range]::-webkit-slider-thumb { appearance: none; width: 19px; height: 19px;
+      border-radius: 50%; background: var(--accent); cursor: pointer; border: 3px solid var(--bg);
+      box-shadow: var(--shadow-s); transition: transform .15s; }
+  .slider input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.15); }
+  .slider input[type=range]::-moz-range-thumb { width: 19px; height: 19px; border-radius: 50%;
+      background: var(--accent); cursor: pointer; border: 3px solid var(--bg); }
+  .terms { margin-top: 24px; border-top: 1px solid var(--line); padding-top: 16px; }
+  .term { display: flex; justify-content: space-between; font-size: 13.6px; padding: 5px 0;
+          color: var(--muted); }
+  .term b { color: var(--ink); font-variant-numeric: tabular-nums; font-weight: 600; }
+  .term.total { border-top: 1px solid var(--line); margin-top: 8px; padding-top: 11px;
+                font-size: 15px; color: var(--ink); font-weight: 700; }
+  .term.total b { color: var(--accent); font-size: 16px; }
+
+  /* ---------- tables / shots ---------- */
+  .table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius);
+                background: var(--bg-soft); }
+  table { width: 100%; border-collapse: collapse; font-size: 14.6px; }
+  th, td { text-align: left; padding: 12px 15px; border-bottom: 1px solid var(--line-soft);
+           vertical-align: top; }
+  tr:last-child td { border-bottom: 0; }
+  th { color: var(--muted); font-size: 12.6px; font-weight: 700; letter-spacing: .04em;
+       text-transform: uppercase; background: var(--bg-deep); }
+  tbody tr { transition: background .18s; }
+  tbody tr:hover { background: color-mix(in srgb, var(--accent) 5%, transparent); }
+
+  .shots { display: grid; grid-template-columns: repeat(auto-fit, minmax(268px, 1fr)); gap: 18px; }
+  .shot { background: var(--bg-soft); border: 1px solid var(--line); border-radius: var(--radius);
+          overflow: hidden; transition: .28s; }
+  .shot:hover { transform: translateY(-4px); box-shadow: var(--shadow-l);
+                border-color: color-mix(in srgb, var(--accent) 38%, var(--line)); }
   .shot img { display: block; width: 100%; height: auto; }
-  .shot .cap { padding: 11px 14px; font-size: 13.5px; color: var(--muted); }
+  .shot .cap { padding: 13px 16px; font-size: 13.6px; color: var(--muted); }
   .shot.wide { grid-column: 1 / -1; }
 
-  table { width: 100%; border-collapse: collapse; font-size: 14.5px; }
-  th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
-  th { color: var(--muted); font-size: 13px; font-weight: 700; }
-  .table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius); }
+  pre { background: var(--bg-soft); border: 1px solid var(--line); border-radius: var(--radius);
+        padding: 18px 20px; overflow-x: auto; font-size: 13.6px; line-height: 1.7;
+        max-width: 100%; }
+  pre code { background: none; padding: 0; border: 0; white-space: pre;
+             overflow-wrap: normal; word-break: normal; }
 
-  pre {
-    background: var(--bg-soft); border: 1px solid var(--line); border-radius: var(--radius);
-    padding: 16px 18px; overflow-x: auto; font-size: 13.5px; line-height: 1.66;
+  footer { padding: 46px 0 64px; border-top: 1px solid var(--line-soft);
+           color: var(--muted); font-size: 14px; }
+
+  /* ---------- reveal ---------- */
+  .rv { opacity: 0; transform: translateY(18px); transition: opacity .6s cubic-bezier(.2,.7,.3,1),
+        transform .6s cubic-bezier(.2,.7,.3,1); }
+  .rv.in { opacity: 1; transform: none; }
+  @media (prefers-reduced-motion: reduce) {
+    * { animation-duration: .001ms !important; transition-duration: .001ms !important; }
+    .rv { opacity: 1; transform: none; }
+    html { scroll-behavior: auto; }
   }
-  pre code { background: none; padding: 0; }
 
-  footer { padding: 40px 0 56px; border-top: 1px solid var(--line); color: var(--muted); font-size: 14px; }
-
+  @media (max-width: 900px) { .calc { grid-template-columns: 1fr; } }
   @media (max-width: 640px) {
-    .hero { padding: 44px 0 32px; }
-    .nav { gap: 14px; }
+    .hero { padding: 48px 0 36px; }
+    .nav { gap: 12px; }
     .nav a.link { display: none; }
-    section { padding: 40px 0; }
+    section { padding: 48px 0; }
+    .demo { padding: 16px; }
   }
 </style>
 </head>
 <body>
 
-<header class="top">
+<header class="top" id="top">
   <div class="wrap nav">
-    <span class="brand">家庭服务机器人</span>
+    <span class="brand"><span class="dot"></span>家庭服务机器人</span>
     <a class="link" href="#safety">安全链</a>
+    <a class="link" href="#graph">运行证据</a>
     <a class="link" href="#arch">架构</a>
     <a class="link" href="#lower">下位机</a>
     <a class="link" href="#web">控制台</a>
-    <a class="link" href="#status">进展</a>
-    <button class="theme-btn" id="themeBtn" type="button">切换主题</button>
+    <a class="link" href="#status">能力</a>
+    <button class="icon-btn" id="themeBtn" type="button" aria-label="切换主题" title="切换主题">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+           stroke-linecap="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+    </button>
   </div>
 </header>
 
 <div class="wrap hero">
-  <h1>让每一条自动速度<br>都只有一条路可走</h1>
+  <div class="eyebrow">RK3588 + STM32F407 · ROS 2 Humble</div>
+  <h1>让每一条自动速度<br><span class="grad">都只有一条路可走</span></h1>
   <p class="sub">
-    RK3588 + STM32F407 双控分层架构的家庭服务机器人。ROS 2 Humble、四轮差速底盘、
-    RPLIDAR S3 导航、Gemini 2 深度感知、AprilTag 自主回充。
-    工程主线不是「跑得多快」，而是让速度链上的每一道闸坏掉时都朝停车的方向失效。
+    家用移动机器人最容易出事的地方，不是路径规划不够聪明，而是没人说得清「谁有权让轮子转」。
+    这个项目的主线，是让速度链上的每一道闸坏掉时都朝停车的方向失效。
   </p>
   <div class="badges">
     <span class="badge on">ROS 2 Humble</span>
     <span class="badge on">Nav2</span>
-    <span class="badge">STM32F407 · FreeRTOS</span>
-    <span class="badge">RK3588</span>
-    <span class="badge">Ubuntu 22.04</span>
-    <span class="badge">Python 3.10</span>
-    <span class="badge">robot_localization EKF</span>
+    <span class="badge">FreeRTOS</span>
     <span class="badge">SLAM Toolbox</span>
+    <span class="badge">robot_localization</span>
     <span class="badge">OpenNav Docking</span>
+    <span class="badge">AprilTag</span>
+    <span class="badge">六轴逆运动学</span>
   </div>
   <div class="cta">
-    <a class="btn primary" href="https://github.com/JosephQ47/Home_robot">在 GitHub 上查看</a>
+    <a class="btn primary" href="https://github.com/JosephQ47/Home_robot">
+      <svg width="17" height="17" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
+      在 GitHub 上查看
+    </a>
     <a class="btn" href="https://github.com/JosephQ47/Home_robot/blob/main/家庭服务机器人技术方案.md">技术方案全文</a>
-    <a class="btn" href="https://github.com/JosephQ47/Home_robot/tree/main/docs/features">功能设计文档</a>
+    <a class="btn" href="https://github.com/JosephQ47/Home_robot/tree/main/docs/acceptance">验收证据</a>
   </div>
 
   <div class="stats">
-    <div class="stat"><div class="n">22</div><div class="l">ROS 2 包</div></div>
-    <div class="stat"><div class="n">163</div><div class="l">安全规则单元测试</div></div>
-    <div class="stat"><div class="n">5</div><div class="l">架构分层</div></div>
-    <div class="stat"><div class="n">47</div><div class="l">链路验证项</div></div>
-    <div class="stat"><div class="n">1</div><div class="l">最终速度发布者</div></div>
+    <div class="stat"><div class="n" data-count="22">0</div><div class="l">ROS 2 包</div></div>
+    <div class="stat"><div class="n" data-count="173">0</div><div class="l">安全规则测试</div></div>
+    <div class="stat"><div class="n" data-count="48">0</div><div class="l">链路验证项</div></div>
+    <div class="stat"><div class="n" data-count="5">0</div><div class="l">架构分层</div></div>
+    <div class="stat"><div class="n" data-count="1">0</div><div class="l">最终速度发布者</div></div>
   </div>
 </div>
 
+<!-- ================= 安全链 ================= -->
 <section id="safety">
   <div class="wrap">
-    <h2>问题：谁有权让轮子转</h2>
-    <p class="lede">
-      家用移动机器人最容易出事的地方，不是路径规划不够聪明。
+    <div class="sec-tag rv">核心设计</div>
+    <h2 class="rv">谁有权让轮子转</h2>
+    <p class="lede rv">
       一个节点崩了，最后一条速度命令还留在总线上；两个规划器同时发速度，底盘收到交替命令；
-      为了顺利对上充电桩，有人把避障停止区关小了——这三件事都足以让机器在家里撞到人。
+      为了顺利对上充电桩，有人把避障停止区关小了。这三件事都足以让机器在家里撞到人。
     </p>
-    <p class="pull">
+    <p class="pull rv">
       所以整个项目围绕一条不变量组织：<strong>任何自动速度都只有一条路可走，
       且这条路上每一道闸坏掉时都朝停车的方向失效。</strong>
     </p>
-    <div class="figure">
-      <img src="images/velocity-chain.svg" alt="自动速度安全链：Nav2 与 OpenNav Docking 的速度经 hr_motion_mux 互斥仲裁，再经 Collision Monitor 一票否决，最后由 STM32 执行">
+
+    <!-- 交互式速度链 -->
+    <div class="demo rv" id="chainDemo">
+      <div class="demo-head">
+        <div class="demo-title">试一下 · 切换任务阶段与障碍，看哪一路速度能到轮子</div>
+        <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:center">
+          <div class="seg" role="group" aria-label="任务阶段">
+            <button data-phase="NAVIGATING" aria-pressed="true">导航</button>
+            <button data-phase="DOCKING" aria-pressed="false">回充</button>
+            <button data-phase="ZERO" aria-pressed="false">停止</button>
+          </div>
+          <label class="toggle"><input type="checkbox" id="obstacle"> 停止区内有障碍</label>
+        </div>
+      </div>
+
+      <svg class="chain-svg" viewBox="0 0 1000 250" role="img"
+           aria-label="自动速度链交互示意：Nav2 与 OpenNav Docking 经 hr_motion_mux 仲裁，再经 Collision Monitor 否决，最后由 STM32 执行">
+        <defs>
+          <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6"
+                  orient="auto-start-reverse"><path d="M0,1 L10,5 L0,9 z" fill="currentColor"/></marker>
+        </defs>
+        <g id="wireNav" stroke="var(--line)" stroke-width="3" fill="none">
+          <path d="M196 70 H250 V112 H286"/>
+        </g>
+        <g id="wireDock" stroke="var(--line)" stroke-width="3" fill="none">
+          <path d="M196 182 H250 V138 H286"/>
+        </g>
+        <g id="wireMid" stroke="var(--line)" stroke-width="3" fill="none">
+          <path d="M470 125 H556"/>
+        </g>
+        <g id="wireOut" stroke="var(--line)" stroke-width="3" fill="none">
+          <path d="M740 125 H826"/>
+        </g>
+
+        <g id="pktNav" opacity="0"><circle r="5.5" fill="var(--accent)"/></g>
+        <g id="pktDock" opacity="0"><circle r="5.5" fill="var(--accent)"/></g>
+        <g id="pktMid" opacity="0"><circle r="5.5" fill="var(--accent)"/></g>
+        <g id="pktOut" opacity="0"><circle r="5.5" fill="var(--ok)"/></g>
+
+        <g id="boxNav">
+          <rect x="16" y="42" width="180" height="56" rx="11" fill="var(--bg)" stroke="var(--line)" stroke-width="2"/>
+          <text x="106" y="68" text-anchor="middle" font-size="14.5" font-weight="700" fill="var(--ink)">Nav2</text>
+          <text x="106" y="86" text-anchor="middle" font-size="11.5" fill="var(--muted)">/cmd_vel_nav</text>
+        </g>
+        <g id="boxDock">
+          <rect x="16" y="154" width="180" height="56" rx="11" fill="var(--bg)" stroke="var(--line)" stroke-width="2"/>
+          <text x="106" y="180" text-anchor="middle" font-size="14.5" font-weight="700" fill="var(--ink)">OpenNav Docking</text>
+          <text x="106" y="198" text-anchor="middle" font-size="11.5" fill="var(--muted)">/cmd_vel_dock</text>
+        </g>
+        <g id="boxMux">
+          <rect x="286" y="76" width="184" height="98" rx="13" fill="var(--accent-soft)"
+                stroke="var(--accent)" stroke-width="2.5"/>
+          <text x="378" y="108" text-anchor="middle" font-size="15" font-weight="700" fill="var(--accent)">hr_motion_mux</text>
+          <text x="378" y="128" text-anchor="middle" font-size="11.5" fill="var(--muted)">阶段互斥 · 切换先归零</text>
+          <text x="378" y="146" text-anchor="middle" font-size="11.5" fill="var(--muted)">唯一 /cmd_vel_auto</text>
+        </g>
+        <g id="boxCM">
+          <rect x="556" y="76" width="184" height="98" rx="13" fill="var(--danger-soft)"
+                stroke="var(--danger)" stroke-width="2.5"/>
+          <text x="648" y="108" text-anchor="middle" font-size="15" font-weight="700" fill="var(--danger)">Collision Monitor</text>
+          <text x="648" y="128" text-anchor="middle" font-size="11.5" fill="var(--muted)">激光停止区</text>
+          <text x="648" y="146" text-anchor="middle" font-size="11.5" fill="var(--muted)">一票否决 /cmd_vel</text>
+        </g>
+        <g id="boxMcu">
+          <rect x="826" y="76" width="158" height="98" rx="13" fill="var(--warn-soft)"
+                stroke="var(--warn)" stroke-width="2.5"/>
+          <text x="905" y="108" text-anchor="middle" font-size="15" font-weight="700" fill="var(--warn)">STM32F407</text>
+          <text x="905" y="128" text-anchor="middle" font-size="11.5" fill="var(--muted)">限速 · 斜坡 · 限流</text>
+          <text x="905" y="146" text-anchor="middle" font-size="11.5" fill="var(--muted)">物理执行权威</text>
+        </g>
+        <text x="378" y="196" text-anchor="middle" font-size="12" font-weight="600"
+              fill="var(--muted)" id="phaseLabel">MotionPhase = NAVIGATING</text>
+      </svg>
+
+      <div class="verdict go" id="verdict">
+        <span style="font-size:18px">✓</span>
+        <div><b>轮子会转</b><span id="verdictText">导航阶段授权 Nav2，停止区内无障碍，速度一路通到 STM32。</span></div>
+      </div>
     </div>
-    <p class="caption">
+    <p class="caption rv" style="margin-top:14px">
       两个规划器都可以「提议」速度，但只有 <code>hr_motion_mux</code> 决定谁的提议生效；
       Collision Monitor 行使一票否决；而 STM32 对这两者都不信任——上位机整体失联 150 ms 后，它自己把车停住。
     </p>
 
-    <div class="cards">
+    <div class="cards rv">
       <div class="card">
         <span class="tag info">互斥仲裁</span>
         <h3>hr_motion_mux</h3>
-        <p>按任务阶段在 Nav2 与 Docking 之间互斥选择，切换先强制归零 300 ms，
-           任一源过期立即归零。<code>/cmd_vel_auto</code> 的 publisher 有且仅有它一个。</p>
+        <p>按任务阶段在两路自动速度之间互斥选择，切换先强制归零 300 ms，任一源过期立即归零。
+           <code>/cmd_vel_auto</code> 的 publisher 有且仅有它一个。</p>
       </div>
       <div class="card">
         <span class="tag danger">一票否决</span>
@@ -255,19 +474,140 @@
   </div>
 </section>
 
+<!-- ================= 停止区计算器 ================= -->
+<section id="stopzone">
+  <div class="wrap">
+    <div class="sec-tag rv">工程推导</div>
+    <h2 class="rv">停止区不是拍脑袋定的</h2>
+    <p class="lede rv">
+      激光停止区的尺寸是四项相加的结果，每一项都来自底盘已经确定的参数。
+      拖动滑块改速度或减速度，看它怎么变——这也是为什么这两个数字改了就必须重算多边形。
+    </p>
+
+    <div class="demo rv">
+      <div class="calc">
+        <div>
+          <div class="sliders">
+            <div class="slider">
+              <label>最大前进速度 <span id="vOut">0.45 m/s</span></label>
+              <input type="range" id="vIn" min="0.15" max="1.20" step="0.05" value="0.45">
+            </div>
+            <div class="slider">
+              <label>减速度上限 <span id="aOut">1.5 m/s²</span></label>
+              <input type="range" id="aIn" min="0.5" max="3.0" step="0.1" value="1.5">
+            </div>
+            <div class="slider">
+              <label>总延迟预算 <span id="lOut">171 ms</span></label>
+              <input type="range" id="lIn" min="60" max="400" step="1" value="171">
+            </div>
+          </div>
+          <div class="terms">
+            <div class="term"><span>机器人轮廓半径</span><b>0.250 m</b></div>
+            <div class="term"><span>延迟期间行程</span><b id="tTravel">0.077 m</b></div>
+            <div class="term"><span>制动距离 v²/2a</span><b id="tBrake">0.068 m</b></div>
+            <div class="term"><span>安全余量</span><b>0.080 m</b></div>
+            <div class="term total"><span>停止区前伸</span><b id="tTotal">0.48 m</b></div>
+          </div>
+        </div>
+        <div>
+          <svg id="zoneSvg" viewBox="0 0 520 300" class="chain-svg"
+               role="img" aria-label="停止区几何示意：机器人轮廓与其前方的激光停止区">
+            <defs>
+              <pattern id="grid" width="26" height="26" patternUnits="userSpaceOnUse">
+                <path d="M26 0 L0 0 0 26" fill="none" stroke="var(--line-soft)" stroke-width="1"/>
+              </pattern>
+            </defs>
+            <rect width="520" height="300" fill="url(#grid)"/>
+            <g id="zoneGroup">
+              <rect id="zoneRect" x="110" y="98" width="200" height="104" rx="5"
+                    fill="color-mix(in srgb, var(--danger) 14%, transparent)"
+                    stroke="var(--danger)" stroke-width="2.5" stroke-dasharray="7 5"/>
+            </g>
+            <circle cx="110" cy="150" r="42" fill="var(--bg-soft)" stroke="var(--muted)" stroke-width="2"/>
+            <path d="M110 150 L146 150" stroke="var(--muted)" stroke-width="2.5" marker-end="url(#ar)"
+                  style="color:var(--muted)"/>
+            <text x="110" y="212" text-anchor="middle" font-size="12" fill="var(--muted)">机器人</text>
+            <text id="zoneLabel" x="230" y="86" text-anchor="middle" font-size="13" font-weight="700"
+                  fill="var(--danger)">停止区 0.48 m</text>
+            <text x="470" y="288" text-anchor="end" font-size="11" fill="var(--muted)">1 格 = 0.1 m</text>
+          </svg>
+        </div>
+      </div>
+    </div>
+    <p class="caption rv" style="margin-top:14px">
+      延迟预算 171 ms 拆开是：RPLIDAR S3 扫描周期 100 ms + Collision Monitor 周期 50 ms +
+      下行命令帧间隔 20 ms + STM32 安全节拍 1 ms。
+    </p>
+  </div>
+</section>
+
+<!-- ================= 真实计算图 ================= -->
+<section id="graph">
+  <div class="wrap">
+    <div class="sec-tag rv">运行证据</div>
+    <h2 class="rv">这不是手画的拓扑图</h2>
+    <p class="lede rv">
+      把系统跑起来，用 rclpy 读活的节点与话题拓扑，再渲染成下面这张图。
+      谁发布了什么，图上就是什么——改一行代码，重新生成，图会跟着变。
+    </p>
+    <div class="figure rv">
+      <img src="images/ros-graph.svg" loading="lazy"
+           alt="从运行中的系统抓取的真实 ROS 计算图：11 个节点，速度链上四个话题各恰好一个发布者">
+    </div>
+    <p class="caption rv">
+      「只有一个节点能发最终速度」写在文档里是一句主张，
+      写在这张从运行系统抓取的拓扑里才是一个事实。
+      抓取脚本在 <code>tools/diagrams/capture_ros_graph.sh</code>，可以自己跑一遍。
+    </p>
+
+    <div class="cards rv">
+      <div class="card">
+        <span class="tag ok">11</span>
+        <h3>节点同时在跑</h3>
+        <p>含上游的 <code>collision_monitor</code> 与真正激活到 active 状态的
+           <code>docking_server</code>，不是占位进程。</p>
+      </div>
+      <div class="card">
+        <span class="tag info">4 / 4</span>
+        <h3>速度话题各一个发布者</h3>
+        <p><code>/cmd_vel_nav</code>、<code>/cmd_vel_dock</code>、<code>/cmd_vel_auto</code>、
+           <code>/cmd_vel</code>，没有任何一条有第二个写入者。</p>
+      </div>
+      <div class="card">
+        <span class="tag info">173</span>
+        <h3>测试对应的是规则</h3>
+        <p>每条测试对应设计文档里一条编号规则，边界按「等于阈值可用、
+           超阈值一个单位即失效」验证。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 架构 ================= -->
 <section id="arch">
   <div class="wrap">
-    <h2>五层架构</h2>
-    <p class="lede">
-      分层的判据是<strong>职责能不能被抢走</strong>：上位机可以崩、可以卡、可以被 Wi-Fi 断开，
-      但都不能影响 SBUS 人工接管和硬件急停。
+    <div class="sec-tag rv">系统架构</div>
+    <h2 class="rv">五层，按「职责能不能被抢走」划分</h2>
+    <p class="lede rv">
+      上位机可以崩、可以卡、可以被 Wi-Fi 断开，但都不能影响 SBUS 人工接管和硬件急停。
+      底盘的限速、限流和 H 桥输出只由 STM32 决定，ROS 侧任何节点都改不了。
     </p>
-    <div class="figure">
-      <img src="images/architecture.svg" alt="五层系统架构：业务任务层、感知与规划层、通信与接口层、实时控制与安全层、驱动与执行层">
+    <div class="figure rv">
+      <img src="images/architecture.svg" loading="lazy"
+           alt="五层系统架构：业务任务层、感知与规划层、通信与接口层、实时控制与安全层、驱动与执行层">
     </div>
-    <p class="caption">上位机负责「想去哪」，下位机负责「现在准不准动」。</p>
+    <p class="caption rv">上位机负责「想去哪」，下位机负责「现在准不准动」。</p>
 
-    <div class="table-wrap">
+    <div class="figure rv">
+      <img src="images/robot-layout.svg" loading="lazy"
+           alt="本体几何工程视图：侧视与俯视，尺寸取自仓库配置">
+    </div>
+    <p class="caption rv">
+      这是按仓库配置里的真实尺寸画的工程视图。轮廓半径、停止区、臂展、深度有效窗口
+      都从对应的 yaml 读出来，改了配置重新生成，图会跟着变。
+    </p>
+
+    <div class="table-wrap rv">
       <table>
         <thead><tr><th>类别</th><th>选型</th><th>职责</th></tr></thead>
         <tbody>
@@ -278,24 +618,27 @@
           <tr><td>执行器</td><td>4× MC520P30_12V 有刷减速编码器电机</td><td>30:1、1560 count/rev（四倍频）</td></tr>
           <tr><td>功率级</td><td>4× VNH5019A-E 独立全桥</td><td>20 kHz PWM、过流/过温硬件保护</td></tr>
           <tr><td>人工接管</td><td>HT-10A + SBUS 接收机</td><td><strong>不经过上位机</strong>的接管与急停</td></tr>
-          <tr><td>电池与回充</td><td>带 BMS 电池包 + AprilTag 充电桩</td><td>低电分级、自主回充、充电真实性确认</td></tr>
+          <tr><td>机械臂</td><td>6 轴舵机臂 + 夹爪 + 末端 D435i</td><td>固定工作位的近距离抓取，臂展 0.39 m</td></tr>
         </tbody>
       </table>
     </div>
   </div>
 </section>
 
+<!-- ================= 下位机 ================= -->
 <section id="lower">
   <div class="wrap">
-    <h2>下位机：四个任务，和它们拒绝共享的东西</h2>
-    <p class="lede">
+    <div class="sec-tag rv">实时控制</div>
+    <h2 class="rv">四个任务，和它们拒绝共享的东西</h2>
+    <p class="lede rv">
       任务边界按<strong>「谁拥有哪份数据」</strong>划分，而不是按功能大小。
       没有第二个任务能写别人的数据，所以也不需要互斥锁去争它。
     </p>
-    <div class="figure">
-      <img src="images/freertos-tasks.svg" alt="STM32 FreeRTOS 四任务：command_task、chassis_task、imu_task、monitor_task 及其隔离边界与看门狗策略">
+    <div class="figure rv">
+      <img src="images/freertos-tasks.svg" loading="lazy"
+           alt="STM32 FreeRTOS 四任务：command_task、chassis_task、imu_task、monitor_task 及其隔离边界与看门狗策略">
     </div>
-    <p class="caption">
+    <p class="caption rv">
       看门狗在这里是<strong>软件存活门</strong>而不是定时器：<code>monitor_task</code> 只有确认
       另外三个任务都按期报到，才去喂 IWDG。任何一个被监控任务挂死，结果是复位，
       而不是带着一个死任务继续跑。
@@ -303,61 +646,66 @@
   </div>
 </section>
 
+<!-- ================= 网页控制台 ================= -->
 <section id="web">
   <div class="wrap">
-    <h2>网页控制台</h2>
-    <p class="lede">
+    <div class="sec-tag rv">人机交互</div>
+    <h2 class="rv">网页控制台</h2>
+    <p class="lede rv">
       局域网内手机和电脑都能用。设计边界很硬：<strong>网页只能创建和取消离散任务，
       不提供任何摇杆或速度直通接口。</strong>远程遥控一个看不见的机器人是危险的，
       所以这条路径从一开始就没有留。
     </p>
-    <div class="shots">
+    <div class="shots rv">
       <div class="shot wide">
-        <img src="images/web/dashboard-task-dispatch.png" alt="网页控制台桌面端：选择地图、区域、目标类别与任务模式后发布任务，任务队列实时显示执行中">
+        <img src="images/web/dashboard-task-dispatch.png" loading="lazy"
+             alt="网页控制台桌面端：选择地图、区域、目标类别与任务模式后发布任务，任务队列实时显示执行中">
         <div class="cap">发布一个「厨房垃圾桶巡检 · 跟随」任务后，任务队列实时转为「执行中」。</div>
       </div>
       <div class="shot">
-        <img src="images/web/dashboard-targets.png" alt="目标记录：识别置信度与雷达关联结果">
+        <img src="images/web/dashboard-targets.png" loading="lazy" alt="目标记录：识别置信度与雷达关联结果">
         <div class="cap">目标记录：无雷达关联的目标只能「仅观察」，不能进入跟随。</div>
       </div>
       <div class="shot">
-        <img src="images/web/dashboard-logs.png" alt="运行日志视图">
+        <img src="images/web/dashboard-logs.png" loading="lazy" alt="运行日志视图">
         <div class="cap">运行日志：任务与安全事件可追溯。</div>
       </div>
       <div class="shot">
-        <img src="images/web/dashboard-mobile.png" alt="移动端任务发布界面">
+        <img src="images/web/dashboard-mobile.png" loading="lazy" alt="移动端任务发布界面">
         <div class="cap">移动端 · 任务发布。</div>
       </div>
       <div class="shot">
-        <img src="images/web/dashboard-mobile-tasks.png" alt="移动端任务队列">
+        <img src="images/web/dashboard-mobile-tasks.png" loading="lazy" alt="移动端任务队列">
         <div class="cap">移动端 · 任务队列。</div>
       </div>
       <div class="shot">
-        <img src="images/web/dashboard-wifi.png" alt="Wi-Fi 配网对话框">
+        <img src="images/web/dashboard-wifi.png" loading="lazy" alt="Wi-Fi 配网对话框">
         <div class="cap">Wi-Fi 配网。</div>
       </div>
     </div>
   </div>
 </section>
 
+<!-- ================= 能力 ================= -->
 <section id="status">
   <div class="wrap">
-    <h2>能力与验证方式</h2>
-    <p class="lede">
-      这张表没有进度百分比，只有「这一条是怎么被证明的」。
-      项目规范里有一条硬约束：验收标准必须可判定，证据必须落盘——
-      「能跑」不算数，<code>ros2 topic hz</code> 的数字、<code>colcon test-result</code> 的输出、bag 文件才算。
-      全部证据在 <code>docs/acceptance/</code>，每一项都能照着命令重跑一遍。
+    <div class="sec-tag rv">验证</div>
+    <h2 class="rv">能力与验证方式</h2>
+    <p class="lede rv">
+      这张表没有进度百分比，只有「这一条是怎么被证明的」。项目规范里有一条硬约束：
+      验收标准必须可判定，证据必须落盘——「能跑」不算数，<code>ros2 topic hz</code> 的数字、
+      <code>colcon test-result</code> 的输出、bag 文件才算。
     </p>
-    <div class="figure">
-      <img src="images/module-status.svg" alt="能力与验证方式：每个模块做到了什么，以及那件事是怎么被证明的">
+    <div class="figure rv">
+      <img src="images/module-status.svg" loading="lazy"
+           alt="能力与验证方式：每个模块做到了什么，以及那件事是怎么被证明的">
     </div>
 
-    <h3>这么做是有回报的</h3>
-    <p style="color: var(--muted); max-width: 52em;">
-      目前为止，<strong>每一个真正危险的缺陷都是「跑起来」而不是「读代码」发现的</strong>。
+    <h3 class="rv" style="margin-top:36px;font-size:19px">这么做是有回报的</h3>
+    <p class="lede rv" style="margin-bottom:20px">
+      到目前为止，<strong>每一个真正危险的缺陷都是「跑起来」而不是「读代码」发现的</strong>。
     </p>
-    <div class="table-wrap">
+    <div class="table-wrap rv">
       <table>
         <thead><tr><th>缺陷</th><th>怎么暴露的</th></tr></thead>
         <tbody>
@@ -367,19 +715,23 @@
           <tr><td><code>apriltag_msgs</code> 根本不含位姿，原实现假设的字段不存在</td><td>装上 apriltag_ros 后首次运行</td></tr>
           <tr><td>TF 缓存让相机看不见 Tag 之后仍返回旧位姿</td><td>改用 TF 后的失效注入</td></tr>
           <tr><td>停止区多边形写成字符串，节点 configure 直接失败</td><td>真的去启动它的时候</td></tr>
+          <tr><td>多线程执行器缺 ReentrantCallbackGroup，长任务把自己中断</td><td>语音到机械臂端到端验收</td></tr>
+          <tr><td>放置点落在机械臂工作空间之外，抓完放不下</td><td>换上真实连杆长度后的 IK 拒绝</td></tr>
         </tbody>
       </table>
     </div>
   </div>
 </section>
 
+<!-- ================= 方法 ================= -->
 <section id="method">
   <div class="wrap">
-    <h2>工程方法</h2>
-    <p class="lede">
-      AI 写代码的成本趋近于零，成本转移到了「凭什么相信这段代码是对的」。这个项目用三根支柱回答。
+    <div class="sec-tag rv">工程方法</div>
+    <h2 class="rv">凭什么相信这段代码是对的</h2>
+    <p class="lede rv">
+      AI 写代码的成本趋近于零，成本转移到了这个问题上。这个项目用三根支柱回答。
     </p>
-    <div class="cards">
+    <div class="cards rv">
       <div class="card">
         <h3>基准文档</h3>
         <p>它<em>应该</em>是什么样。约 2200 行的技术方案是唯一权威，
@@ -393,68 +745,222 @@
       <div class="card">
         <h3>一致性机制</h3>
         <p>两者有没有分叉。源文件头部带 <code>@spec</code> 回指标记，
-           追溯表逐条记录代码与方案条款的对应及成熟度。</p>
+           追溯表逐条记录代码与方案条款的对应及验证方式。</p>
       </div>
     </div>
-
-    <h3 style="margin-top: 32px;">几条自己给自己定的硬规矩</h3>
-    <ul style="color: var(--muted); max-width: 52em;">
-      <li><strong>没有设计文档不许写代码。</strong>接口、行为规则和可判定的验收标准先写清楚，评审通过才开工。</li>
-      <li><strong>同一问题连续 3 次修不好就停手找根因。</strong>不允许连打补丁。</li>
-      <li><strong>不把估算值当实测值。</strong>厂家没有可追溯资料的参数，文档里只写项目运行上限，
-          绝不在简历或答辩中冒充实测结论。</li>
-    </ul>
   </div>
 </section>
 
+<!-- ================= 上手 ================= -->
 <section id="start">
   <div class="wrap">
-    <h2>快速开始</h2>
-    <pre><code># 依赖：Ubuntu 22.04 + ROS 2 Humble
+    <div class="sec-tag rv">上手</div>
+    <h2 class="rv">五分钟跑起来</h2>
+    <p class="lede rv">不需要机器人。机械臂和语音都带了 mock 后端，整条链在 PC 上就能走完。</p>
+    <pre class="rv"><code># 依赖：Ubuntu 22.04 + ROS 2 Humble
 ./scripts/install_deps.sh all      # Nav2 节点组、AprilTag、Docking、vision_msgs
 
-cd upper
-source /opt/ros/humble/setup.bash
-colcon build
-source install/setup.bash
+cd upper &amp;&amp; source /opt/ros/humble/setup.bash
+colcon build &amp;&amp; source install/setup.bash
 
-# 安全 Mock 总入口：不连接硬件，不发布任何速度
-ros2 launch hr_bringup mock.launch.py
-
-# 全部单元测试（148 条）
+# 全部单元测试（173 条，不需要硬件）
 python3 -m pytest upper/src/*/test tests -q
 
-# 机械臂全链：mock 舵机控制器，PC 上即可跑通完整抓取序列
+# 机械臂全链：mock 舵机控制器，PC 上即可跑完整个抓取序列
 ros2 run hr_arm_driver arm_driver --ros-args -p transport:=mock &amp;
-ros2 run hr_arm_controller arm_controller</code></pre>
+ros2 run hr_arm_controller arm_controller &amp;
+
+# 语音链：text 适配器顶替麦克风
+ros2 run hr_voice_capture voice_capture --ros-args -p asr_adapter:=text -p wake_word:=小家 &amp;
+ros2 topic pub --once /voice/text_in std_msgs/String "data: '小家'"
+ros2 topic pub --once /voice/text_in std_msgs/String "data: '抓取杯子|0.93'"</code></pre>
   </div>
 </section>
 
 <footer>
   <div class="wrap">
     架构图由仓库内 <code>tools/diagrams/</code> 的脚本生成，可随方案更新一键重绘 ·
-    <a href="https://github.com/JosephQ47/Home_robot">GitHub</a>
+    <a href="https://github.com/JosephQ47/Home_robot">GitHub</a> ·
+    <a href="#top">回到顶部</a>
   </div>
 </footer>
 
 <script>
-  (function () {
-    var btn = document.getElementById('themeBtn');
-    var root = document.documentElement;
-    try {
-      var saved = localStorage.getItem('hr-theme');
-      if (saved) root.setAttribute('data-theme', saved);
-    } catch (e) { /* private mode or blocked storage: fall back to the OS preference */ }
-    btn.addEventListener('click', function () {
-      var now = root.getAttribute('data-theme');
-      if (!now) {
-        now = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-      }
-      var next = now === 'dark' ? 'light' : 'dark';
-      root.setAttribute('data-theme', next);
-      try { localStorage.setItem('hr-theme', next); } catch (e) { /* nothing to persist to */ }
+(function () {
+  'use strict';
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* ---------- theme ---------- */
+  var root = document.documentElement;
+  try {
+    var saved = localStorage.getItem('hr-theme');
+    if (saved) root.setAttribute('data-theme', saved);
+  } catch (e) { /* private mode or blocked storage: fall back to the OS preference */ }
+  document.getElementById('themeBtn').addEventListener('click', function () {
+    var now = root.getAttribute('data-theme');
+    if (!now) now = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    var next = now === 'dark' ? 'light' : 'dark';
+    root.setAttribute('data-theme', next);
+    try { localStorage.setItem('hr-theme', next); } catch (e) { /* nothing to persist to */ }
+  });
+
+  /* ---------- sticky header shadow ---------- */
+  var header = document.querySelector('header.top');
+  addEventListener('scroll', function () {
+    header.classList.toggle('stuck', scrollY > 8);
+  }, { passive: true });
+
+  /* ---------- reveal on scroll ---------- */
+  var rv = document.querySelectorAll('.rv');
+  if (reduce || !('IntersectionObserver' in window)) {
+    rv.forEach(function (el) { el.classList.add('in'); });
+  } else {
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (en, i) {
+        if (!en.isIntersecting) return;
+        setTimeout(function () { en.target.classList.add('in'); }, Math.min(i, 5) * 55);
+        io.unobserve(en.target);
+      });
+    }, { rootMargin: '0px 0px -8% 0px', threshold: .08 });
+    rv.forEach(function (el) { io.observe(el); });
+  }
+
+  /* ---------- counters ---------- */
+  document.querySelectorAll('[data-count]').forEach(function (el) {
+    var target = parseInt(el.dataset.count, 10);
+    if (reduce) { el.textContent = target; return; }
+    var seen = false;
+    var obs = new IntersectionObserver(function (entries) {
+      if (!entries[0].isIntersecting || seen) return;
+      seen = true;
+      var t0 = performance.now(), dur = 1100;
+      (function step(now) {
+        var p = Math.min(1, (now - t0) / dur);
+        // ease-out so it decelerates into the final value rather than snapping
+        el.textContent = Math.round(target * (1 - Math.pow(1 - p, 3)));
+        if (p < 1) requestAnimationFrame(step);
+      })(t0);
+    }, { threshold: .4 });
+    obs.observe(el);
+  });
+
+  /* ---------- interactive velocity chain ---------- */
+  var phase = 'NAVIGATING';
+  var obstacle = false;
+  var IDLE = 'var(--line)', LIVE = 'var(--accent)', DEAD = 'var(--danger)';
+
+  function setWire(id, colour, dashed) {
+    var g = document.getElementById(id);
+    g.setAttribute('stroke', colour);
+    g.setAttribute('stroke-dasharray', dashed ? '6 6' : 'none');
+  }
+
+  var animations = [];
+  function flow(pktId, path, colour, delay) {
+    var pkt = document.getElementById(pktId);
+    pkt.querySelector('circle').setAttribute('fill', colour);
+    if (reduce) { pkt.setAttribute('opacity', '0'); return; }
+    pkt.setAttribute('opacity', '1');
+    var a = pkt.animate(
+      [{ offset: 0, transform: 'translate(' + path[0] + 'px,' + path[1] + 'px)' },
+       { offset: 1, transform: 'translate(' + path[2] + 'px,' + path[3] + 'px)' }],
+      { duration: 1500, iterations: Infinity, delay: delay || 0, easing: 'linear' });
+    animations.push(a);
+  }
+
+  function render() {
+    animations.forEach(function (a) { a.cancel(); });
+    animations = [];
+    ['pktNav', 'pktDock', 'pktMid', 'pktOut'].forEach(function (id) {
+      document.getElementById(id).setAttribute('opacity', '0');
     });
-  })();
+
+    var navLive = phase === 'NAVIGATING';
+    var dockLive = phase === 'DOCKING';
+    var muxPasses = navLive || dockLive;
+    var reaches = muxPasses && !obstacle;
+
+    setWire('wireNav', navLive ? LIVE : IDLE, !navLive);
+    setWire('wireDock', dockLive ? LIVE : IDLE, !dockLive);
+    setWire('wireMid', muxPasses ? LIVE : IDLE, !muxPasses);
+    setWire('wireOut', reaches ? 'var(--ok)' : DEAD, !reaches);
+
+    document.getElementById('phaseLabel').textContent = 'MotionPhase = ' + phase;
+
+    if (navLive) flow('pktNav', [16, 42, 90, 42], LIVE);
+    if (dockLive) flow('pktDock', [16, -42, 90, -42], LIVE);
+    if (muxPasses) flow('pktMid', [470, 125, 556, 125], LIVE, 200);
+    if (reaches) flow('pktOut', [740, 125, 826, 125], 'var(--ok)', 400);
+
+    var v = document.getElementById('verdict');
+    var t = document.getElementById('verdictText');
+    if (reaches) {
+      v.className = 'verdict go';
+      v.querySelector('span').textContent = '✓';
+      v.querySelector('b').textContent = '轮子会转';
+      t.textContent = navLive
+        ? '导航阶段授权 Nav2，停止区内无障碍，速度一路通到 STM32。'
+        : '回充阶段授权 Docking，停止区内无障碍，低速对接速度通到 STM32。';
+    } else {
+      v.className = 'verdict stop';
+      v.querySelector('span').textContent = '✕';
+      v.querySelector('b').textContent = '轮子不会转';
+      t.textContent = !muxPasses
+        ? 'ZERO 阶段没有授权任何速度源。两个规划器就算一直在发，mux 也只输出零速。'
+        : 'Collision Monitor 在停止区里看到障碍，行使一票否决——mux 仍在转发，但最终 /cmd_vel 是零。';
+    }
+  }
+
+  document.querySelectorAll('#chainDemo .seg button').forEach(function (b) {
+    b.addEventListener('click', function () {
+      phase = b.dataset.phase;
+      document.querySelectorAll('#chainDemo .seg button').forEach(function (o) {
+        o.setAttribute('aria-pressed', String(o === b));
+      });
+      render();
+    });
+  });
+  document.getElementById('obstacle').addEventListener('change', function (e) {
+    obstacle = e.target.checked;
+    render();
+  });
+  render();
+
+  /* ---------- stop zone calculator ---------- */
+  var RADIUS = 0.25, MARGIN = 0.08, SCALE = 260;   // 260 px per metre
+  var vIn = document.getElementById('vIn'),
+      aIn = document.getElementById('aIn'),
+      lIn = document.getElementById('lIn');
+
+  function recompute() {
+    var v = parseFloat(vIn.value), a = parseFloat(aIn.value), l = parseInt(lIn.value, 10) / 1000;
+    var travel = v * l;
+    var brake = (v * v) / (2 * a);
+    var front = RADIUS + travel + brake + MARGIN;
+
+    document.getElementById('vOut').textContent = v.toFixed(2) + ' m/s';
+    document.getElementById('aOut').textContent = a.toFixed(1) + ' m/s²';
+    document.getElementById('lOut').textContent = Math.round(l * 1000) + ' ms';
+    document.getElementById('tTravel').textContent = travel.toFixed(3) + ' m';
+    document.getElementById('tBrake').textContent = brake.toFixed(3) + ' m';
+    document.getElementById('tTotal').textContent = front.toFixed(2) + ' m';
+
+    // The zone starts at base_link and runs forward; half width is radius + 0.05.
+    var w = Math.max(20, front * SCALE);
+    var h = (RADIUS + 0.05) * 2 * SCALE;
+    var rect = document.getElementById('zoneRect');
+    rect.setAttribute('x', 110);
+    rect.setAttribute('y', 150 - h / 2);
+    rect.setAttribute('width', w);
+    rect.setAttribute('height', h);
+    var label = document.getElementById('zoneLabel');
+    label.setAttribute('x', 110 + w / 2);
+    label.setAttribute('y', 150 - h / 2 - 12);
+    label.textContent = '停止区 ' + front.toFixed(2) + ' m';
+  }
+  [vIn, aIn, lIn].forEach(function (el) { el.addEventListener('input', recompute); });
+  recompute();
+})();
 </script>
 </body>
 </html>

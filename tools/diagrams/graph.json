@@ -1,0 +1,510 @@
+{
+ "nodes": [
+  "/_ros2cli_daemon_0_0eabf621a6614cde80f459b2f391675d",
+  "/collision_monitor",
+  "/docking_server",
+  "/hr_arm_controller",
+  "/hr_arm_driver",
+  "/hr_depth_obstacle",
+  "/hr_dock_pose_adapter",
+  "/hr_local_motion",
+  "/hr_motion_mux",
+  "/hr_task_manager",
+  "/hr_voice_capture",
+  "/hr_voice_command"
+ ],
+ "edges": [
+  {
+   "from": "/hr_arm_driver",
+   "to": "/arm/faults",
+   "type": "std_msgs/msg/String",
+   "dir": "pub"
+  },
+  {
+   "from": "/hr_arm_driver",
+   "to": "/arm/joint_states",
+   "type": "sensor_msgs/msg/JointState",
+   "dir": "pub"
+  },
+  {
+   "from": "/hr_arm_driver",
+   "to": "/diagnostics",
+   "type": "diagnostic_msgs/msg/DiagnosticArray",
+   "dir": "pub"
+  },
+  {
+   "from": "/arm/gripper_command",
+   "to": "/hr_arm_driver",
+   "type": "std_msgs/msg/Float32",
+   "dir": "sub"
+  },
+  {
+   "from": "/arm/joint_trajectory",
+   "to": "/hr_arm_driver",
+   "type": "trajectory_msgs/msg/JointTrajectory",
+   "dir": "sub"
+  },
+  {
+   "from": "/arm/stop",
+   "to": "/hr_arm_driver",
+   "type": "std_msgs/msg/Bool",
+   "dir": "sub"
+  },
+  {
+   "from": "/hr_motion_mux",
+   "to": "/cmd_vel_auto",
+   "type": "geometry_msgs/msg/Twist",
+   "dir": "pub"
+  },
+  {
+   "from": "/hr_motion_mux",
+   "to": "/diagnostics",
+   "type": "diagnostic_msgs/msg/DiagnosticArray",
+   "dir": "pub"
+  },
+  {
+   "from": "/cmd_vel_dock",
+   "to": "/hr_motion_mux",
+   "type": "geometry_msgs/msg/Twist",
+   "dir": "sub"
+  },
+  {
+   "from": "/cmd_vel_nav",
+   "to": "/hr_motion_mux",
+   "type": "geometry_msgs/msg/Twist",
+   "dir": "sub"
+  },
+  {
+   "from": "/task/motion_phase",
+   "to": "/hr_motion_mux",
+   "type": "hr_interfaces/msg/MotionPhase",
+   "dir": "sub"
+  },
+  {
+   "from": "/docking_server",
+   "to": "/bond",
+   "type": "bond/msg/Status",
+   "dir": "pub"
+  },
+  {
+   "from": "/docking_server",
+   "to": "/cmd_vel_dock",
+   "type": "geometry_msgs/msg/Twist",
+   "dir": "pub"
+  },
+  {
+   "from": "/docking_server",
+   "to": "/dock_pose",
+   "type": "geometry_msgs/msg/PoseStamped",
+   "dir": "pub"
+  },
+  {
+   "from": "/docking_server",
+   "to": "/dock_robot/_action/feedback",
+   "type": "opennav_docking_msgs/action/DockRobot_FeedbackMessage",
+   "dir": "pub"
+  },
+  {
+   "from": "/docking_server",
+   "to": "/dock_robot/_action/status",
+   "type": "action_msgs/msg/GoalStatusArray",
+   "dir": "pub"
+  },
+  {
+   "from": "/docking_server",
+   "to": "/docking_server/transition_event",
+   "type": "lifecycle_msgs/msg/TransitionEvent",
+   "dir": "pub"
+  },
+  {
+   "from": "/docking_server",
+   "to": "/filtered_dock_pose",
+   "type": "geometry_msgs/msg/PoseStamped",
+   "dir": "pub"
+  },
+  {
+   "from": "/docking_server",
+   "to": "/staging_pose",
+   "type": "geometry_msgs/msg/PoseStamped",
+   "dir": "pub"
+  },
+  {
+   "from": "/docking_server",
+   "to": "/undock_robot/_action/feedback",
+   "type": "opennav_docking_msgs/action/UndockRobot_FeedbackMessage",
+   "dir": "pub"
+  },
+  {
+   "from": "/docking_server",
+   "to": "/undock_robot/_action/status",
+   "type": "action_msgs/msg/GoalStatusArray",
+   "dir": "pub"
+  },
+  {
+   "from": "/bond",
+   "to": "/docking_server",
+   "type": "bond/msg/Status",
+   "dir": "sub"
+  },
+  {
+   "from": "/detected_dock_pose",
+   "to": "/docking_server",
+   "type": "geometry_msgs/msg/PoseStamped",
+   "dir": "sub"
+  },
+  {
+   "from": "/navigate_to_pose/_action/feedback",
+   "to": "/docking_server",
+   "type": "nav2_msgs/action/NavigateToPose_FeedbackMessage",
+   "dir": "sub"
+  },
+  {
+   "from": "/navigate_to_pose/_action/status",
+   "to": "/docking_server",
+   "type": "action_msgs/msg/GoalStatusArray",
+   "dir": "sub"
+  },
+  {
+   "from": "/hr_depth_obstacle",
+   "to": "/diagnostics",
+   "type": "diagnostic_msgs/msg/DiagnosticArray",
+   "dir": "pub"
+  },
+  {
+   "from": "/hr_depth_obstacle",
+   "to": "/obstacle/depth_points",
+   "type": "sensor_msgs/msg/PointCloud2",
+   "dir": "pub"
+  },
+  {
+   "from": "/camera/depth/points",
+   "to": "/hr_depth_obstacle",
+   "type": "sensor_msgs/msg/PointCloud2",
+   "dir": "sub"
+  },
+  {
+   "from": "/hr_dock_pose_adapter",
+   "to": "/detected_dock_pose",
+   "type": "geometry_msgs/msg/PoseStamped",
+   "dir": "pub"
+  },
+  {
+   "from": "/hr_dock_pose_adapter",
+   "to": "/docking/tag_status",
+   "type": "diagnostic_msgs/msg/DiagnosticArray",
+   "dir": "pub"
+  },
+  {
+   "from": "/camera/color/camera_info",
+   "to": "/hr_dock_pose_adapter",
+   "type": "sensor_msgs/msg/CameraInfo",
+   "dir": "sub"
+  },
+  {
+   "from": "/detections",
+   "to": "/hr_dock_pose_adapter",
+   "type": "apriltag_msgs/msg/AprilTagDetectionArray",
+   "dir": "sub"
+  },
+  {
+   "from": "/tf",
+   "to": "/hr_dock_pose_adapter",
+   "type": "tf2_msgs/msg/TFMessage",
+   "dir": "sub"
+  },
+  {
+   "from": "/tf_static",
+   "to": "/hr_dock_pose_adapter",
+   "type": "tf2_msgs/msg/TFMessage",
+   "dir": "sub"
+  },
+  {
+   "from": "/collision_monitor",
+   "to": "/bond",
+   "type": "bond/msg/Status",
+   "dir": "pub"
+  },
+  {
+   "from": "/collision_monitor",
+   "to": "/cmd_vel",
+   "type": "geometry_msgs/msg/Twist",
+   "dir": "pub"
+  },
+  {
+   "from": "/collision_monitor",
+   "to": "/collision_monitor/stop_polygon",
+   "type": "geometry_msgs/msg/PolygonStamped",
+   "dir": "pub"
+  },
+  {
+   "from": "/collision_monitor",
+   "to": "/collision_monitor/transition_event",
+   "type": "lifecycle_msgs/msg/TransitionEvent",
+   "dir": "pub"
+  },
+  {
+   "from": "/bond",
+   "to": "/collision_monitor",
+   "type": "bond/msg/Status",
+   "dir": "sub"
+  },
+  {
+   "from": "/cmd_vel_auto",
+   "to": "/collision_monitor",
+   "type": "geometry_msgs/msg/Twist",
+   "dir": "sub"
+  },
+  {
+   "from": "/scan",
+   "to": "/collision_monitor",
+   "type": "sensor_msgs/msg/LaserScan",
+   "dir": "sub"
+  },
+  {
+   "from": "/hr_local_motion",
+   "to": "/cmd_vel_nav",
+   "type": "geometry_msgs/msg/Twist",
+   "dir": "pub"
+  },
+  {
+   "from": "/follow_target",
+   "to": "/hr_local_motion",
+   "type": "hr_interfaces/msg/FollowTarget",
+   "dir": "sub"
+  },
+  {
+   "from": "/goal_pose",
+   "to": "/hr_local_motion",
+   "type": "geometry_msgs/msg/PoseStamped",
+   "dir": "sub"
+  },
+  {
+   "from": "/odometry/filtered",
+   "to": "/hr_local_motion",
+   "type": "nav_msgs/msg/Odometry",
+   "dir": "sub"
+  },
+  {
+   "from": "/robot_status",
+   "to": "/hr_local_motion",
+   "type": "hr_interfaces/msg/RobotStatus",
+   "dir": "sub"
+  },
+  {
+   "from": "/task/follow_policy",
+   "to": "/hr_local_motion",
+   "type": "hr_interfaces/msg/FollowPolicy",
+   "dir": "sub"
+  },
+  {
+   "from": "/hr_voice_command",
+   "to": "/voice/feedback",
+   "type": "std_msgs/msg/String",
+   "dir": "pub"
+  },
+  {
+   "from": "/hr_voice_command",
+   "to": "/voice/transcript",
+   "type": "std_msgs/msg/String",
+   "dir": "pub"
+  },
+  {
+   "from": "/task/execute/_action/feedback",
+   "to": "/hr_voice_command",
+   "type": "hr_interfaces/action/ExecuteTask_FeedbackMessage",
+   "dir": "sub"
+  },
+  {
+   "from": "/task/execute/_action/status",
+   "to": "/hr_voice_command",
+   "type": "action_msgs/msg/GoalStatusArray",
+   "dir": "sub"
+  },
+  {
+   "from": "/voice/transcript_in",
+   "to": "/hr_voice_command",
+   "type": "std_msgs/msg/String",
+   "dir": "sub"
+  },
+  {
+   "from": "/hr_arm_controller",
+   "to": "/arm/execute/_action/feedback",
+   "type": "hr_interfaces/action/ExecuteArm_FeedbackMessage",
+   "dir": "pub"
+  },
+  {
+   "from": "/hr_arm_controller",
+   "to": "/arm/execute/_action/status",
+   "type": "action_msgs/msg/GoalStatusArray",
+   "dir": "pub"
+  },
+  {
+   "from": "/hr_arm_controller",
+   "to": "/arm/gripper_command",
+   "type": "std_msgs/msg/Float32",
+   "dir": "pub"
+  },
+  {
+   "from": "/hr_arm_controller",
+   "to": "/arm/joint_trajectory",
+   "type": "trajectory_msgs/msg/JointTrajectory",
+   "dir": "pub"
+  },
+  {
+   "from": "/hr_arm_controller",
+   "to": "/arm/perception_enabled",
+   "type": "std_msgs/msg/Bool",
+   "dir": "pub"
+  },
+  {
+   "from": "/hr_arm_controller",
+   "to": "/arm/stop",
+   "type": "std_msgs/msg/Bool",
+   "dir": "pub"
+  },
+  {
+   "from": "/hr_arm_controller",
+   "to": "/diagnostics",
+   "type": "diagnostic_msgs/msg/DiagnosticArray",
+   "dir": "pub"
+  },
+  {
+   "from": "/arm/grasp_candidates",
+   "to": "/hr_arm_controller",
+   "type": "hr_interfaces/msg/GraspCandidates",
+   "dir": "sub"
+  },
+  {
+   "from": "/arm/joint_states",
+   "to": "/hr_arm_controller",
+   "type": "sensor_msgs/msg/JointState",
+   "dir": "sub"
+  },
+  {
+   "from": "/arm/nav_goal_finished",
+   "to": "/hr_arm_controller",
+   "type": "std_msgs/msg/Bool",
+   "dir": "sub"
+  },
+  {
+   "from": "/cmd_vel",
+   "to": "/hr_arm_controller",
+   "type": "geometry_msgs/msg/Twist",
+   "dir": "sub"
+  },
+  {
+   "from": "/cmd_vel_auto",
+   "to": "/hr_arm_controller",
+   "type": "geometry_msgs/msg/Twist",
+   "dir": "sub"
+  },
+  {
+   "from": "/robot_status",
+   "to": "/hr_arm_controller",
+   "type": "hr_interfaces/msg/RobotStatus",
+   "dir": "sub"
+  },
+  {
+   "from": "/wheel/odom_raw",
+   "to": "/hr_arm_controller",
+   "type": "nav_msgs/msg/Odometry",
+   "dir": "sub"
+  },
+  {
+   "from": "/hr_task_manager",
+   "to": "/task/execute/_action/feedback",
+   "type": "hr_interfaces/action/ExecuteTask_FeedbackMessage",
+   "dir": "pub"
+  },
+  {
+   "from": "/hr_task_manager",
+   "to": "/task/execute/_action/status",
+   "type": "action_msgs/msg/GoalStatusArray",
+   "dir": "pub"
+  },
+  {
+   "from": "/hr_task_manager",
+   "to": "/task/follow_policy",
+   "type": "hr_interfaces/msg/FollowPolicy",
+   "dir": "pub"
+  },
+  {
+   "from": "/hr_task_manager",
+   "to": "/task/motion_phase",
+   "type": "hr_interfaces/msg/MotionPhase",
+   "dir": "pub"
+  },
+  {
+   "from": "/hr_task_manager",
+   "to": "/task/perception_control",
+   "type": "hr_interfaces/msg/PerceptionControl",
+   "dir": "pub"
+  },
+  {
+   "from": "/hr_task_manager",
+   "to": "/task/status",
+   "type": "hr_interfaces/msg/TaskStatus",
+   "dir": "pub"
+  },
+  {
+   "from": "/hr_task_manager",
+   "to": "/task/tracker_policy",
+   "type": "hr_interfaces/msg/TrackerPolicy",
+   "dir": "pub"
+  },
+  {
+   "from": "/arm/execute/_action/feedback",
+   "to": "/hr_task_manager",
+   "type": "hr_interfaces/action/ExecuteArm_FeedbackMessage",
+   "dir": "sub"
+  },
+  {
+   "from": "/arm/execute/_action/status",
+   "to": "/hr_task_manager",
+   "type": "action_msgs/msg/GoalStatusArray",
+   "dir": "sub"
+  },
+  {
+   "from": "/navigate_to_pose/_action/feedback",
+   "to": "/hr_task_manager",
+   "type": "nav2_msgs/action/NavigateToPose_FeedbackMessage",
+   "dir": "sub"
+  },
+  {
+   "from": "/navigate_to_pose/_action/status",
+   "to": "/hr_task_manager",
+   "type": "action_msgs/msg/GoalStatusArray",
+   "dir": "sub"
+  },
+  {
+   "from": "/odometry/filtered",
+   "to": "/hr_task_manager",
+   "type": "nav_msgs/msg/Odometry",
+   "dir": "sub"
+  },
+  {
+   "from": "/robot_status",
+   "to": "/hr_task_manager",
+   "type": "hr_interfaces/msg/RobotStatus",
+   "dir": "sub"
+  },
+  {
+   "from": "/hr_voice_capture",
+   "to": "/diagnostics",
+   "type": "diagnostic_msgs/msg/DiagnosticArray",
+   "dir": "pub"
+  },
+  {
+   "from": "/hr_voice_capture",
+   "to": "/voice/transcript_in",
+   "type": "std_msgs/msg/String",
+   "dir": "pub"
+  },
+  {
+   "from": "/voice/text_in",
+   "to": "/hr_voice_capture",
+   "type": "std_msgs/msg/String",
+   "dir": "sub"
+  }
+ ]
+}

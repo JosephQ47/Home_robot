@@ -1,20 +1,23 @@
 # 6-axis servo arm: geometry, limits and the grasp envelope.
 #
 # Link lengths are those of the arm on the chassis, measured joint axis to joint
-# axis. Reach is upper_arm + forearm = 0.203 m from the shoulder, and the IK
-# refuses any target outside it rather than approximating.
+# axis. Reach is upper_arm + forearm = 0.275 m from the shoulder, or 0.390 m
+# from arm_base_link once the shoulder offset and the wrist are included. The IK
+# refuses any target outside that rather than approximating, so the numbers
+# below and the grasp envelope further down have to agree — test_workspace.py
+# asserts that they do.
 hr_arm_controller:
   ros__parameters:
     # arm_base_link up to the shoulder axis.
-    base_height_m: 0.065
+    base_height_m: 0.085
     # Sideways offset of the shoulder from the base yaw axis.
-    shoulder_offset_m: 0.020
+    shoulder_offset_m: 0.025
     # Shoulder axis to elbow axis.
-    upper_arm_m: 0.105
+    upper_arm_m: 0.145
     # Elbow axis to wrist centre.
-    forearm_m: 0.098
+    forearm_m: 0.130
     # Wrist centre to tool0 (gripper tip).
-    wrist_length_m: 0.075
+    wrist_length_m: 0.090
 
     # Soft limits, one notch inside the servos' mechanical stops so the
     # controller's own hard limits are never the thing that stops a motion.
@@ -50,8 +53,12 @@ hr_arm_controller:
 
     # Straight down: the first version grasps objects off a flat work surface.
     approach_pitch_rad: -1.5708
-    # Clear of a 0.09 m tall mug with margin for the gripper fingers.
+    # Clear of a 0.09 m tall mug with margin for the gripper fingers. Both of
+    # these raise the target, so they eat into the reach: a pre-grasp 0.10 m
+    # above a 0.24 m reach-out is 0.26 m of straight-line distance from the
+    # shoulder, which is most of what the arm has.
     pregrasp_height_m: 0.10
     lift_height_m: 0.08
-    # Drop-off point, inside the workspace and clear of the approach path.
-    place_position_xyz: [0.20, -0.15, 0.10]
+    # Drop-off point. Off to the right so the approach path to the work surface
+    # stays clear, and well inside the reach at that height.
+    place_position_xyz: [0.20, -0.15, 0.05]

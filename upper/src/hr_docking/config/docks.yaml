@@ -1,5 +1,11 @@
-# Charging dock: where it is, which tag marks it, and where the contacts sit
-# relative to that tag.
+# hr_dock_pose_adapter node parameters.
+#
+# Only ros__parameters may appear in a file passed to --params-file: rcl rejects
+# the whole file if any other top-level key carries a value. The dock database
+# therefore lives in dock_database.yaml, which is read by the task layer rather
+# than by the parameter parser.
+#
+# Charging dock: which tag marks it, and where the contacts sit relative to it.
 #
 # The tag is a tag36h11 printed at 100 mm edge length. At the Gemini 2's
 # 1920x1080 colour resolution that spans roughly 120 px at 1 m, which is well
@@ -38,11 +44,3 @@ hr_dock_pose_adapter:
     # Three consecutive good frames (100 ms) before the first pose is published,
     # so one lucky decode cannot start an approach.
     min_consecutive_detections: 3
-
-docks:
-  home_dock:
-    # Nav2 drives here first; OpenNav Docking takes over from this pose.
-    # 0.60 m back from the contacts, square on, which puts the tag comfortably
-    # inside the colour camera's field of view.
-    staging_pose: {x: 0.0, y: 0.0, yaw: 0.0, frame_id: map}
-    tag_id: 7

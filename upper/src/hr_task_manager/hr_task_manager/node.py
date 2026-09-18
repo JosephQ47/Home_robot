@@ -1,4 +1,5 @@
 """Single business task arbiter. This node never publishes velocity."""
+import math
 import threading
 import time
 
@@ -34,6 +35,11 @@ class TaskManager(Node):
         self.declare_parameter('arm_task_timeout_sec', 120.0)
         self.declare_parameter('accepted_object_classes', [''])
         self.declare_parameter('accepted_places', [''])
+        # Named work pose a grasp is performed from. Empty means the caller has
+        # already parked the robot and only the arm stages should run.
+        self.declare_parameter('grasp_work_pose', '')
+        self.declare_parameter('work_pose_xyyaw', [0.0, 0.0, 0.0])
+        self.declare_parameter('base_settle_timeout_sec', 10.0)
         self.robot_status = None
         self.status_time = 0.0
         self.odom_time = 0.0
@@ -198,6 +204,73 @@ class TaskManager(Node):
         return not status.remote_override and status.control_source in (
             RobotStatus.CONTROL_UNKNOWN, RobotStatus.CONTROL_AUTO)
 
+    def navigate_to_work_pose(self, handle, goal, state):
+        """Drive to the configured work pose, then hand the base back to ZERO.
+
+        Returns False when the approach did not finish, with `state` already
+        carrying the reason. The phase is NAVIGATING only for this stretch: the
+        moment it ends the base loses its authorisation again, so there is no
+        window in which both the wheels and the arm are allowed to move.
+        """
+        pose = [float(v) for v in self.get_parameter('work_pose_xyyaw').value]
+        if len(pose) != 3:
+            state.transition('REJECTED', 'PRECHECK', 'work_pose_xyyaw must be [x, y, yaw]',
+                             code='WORK_POSE_UNCONFIGURED')
+            return False
+        state.transition('RUNNING', 'NAVIGATING', 'driving to the work pose', 0.15)
+        self.publish_controls(goal, True, 'NAVIGATING')
+        # The web console shows whatever /task/status carries, so a stage that is
+        # never published is a stage the operator cannot see the robot is in.
+        feedback = ExecuteTask.Feedback()
+        feedback.status = self.publish_state(goal, state)
+        handle.publish_feedback(feedback)
+        nav_timeout = float(self.get_parameter('nav_server_timeout_sec').value)
+        if not self.nav.wait_for_server(timeout_sec=nav_timeout):
+            state.transition('FAILED', 'ZERO',
+                             f'navigation action server not available in {nav_timeout:.1f}s',
+                             code='NAV_GOAL_REJECTED')
+            return False
+        nav_goal = NavigateToPose.Goal()
+        nav_goal.pose = PoseStamped()
+        nav_goal.pose.header.stamp = self.get_clock().now().to_msg()
+        nav_goal.pose.header.frame_id = 'map'
+        nav_goal.pose.pose.position.x, nav_goal.pose.pose.position.y = pose[0], pose[1]
+        nav_goal.pose.pose.orientation.z = math.sin(pose[2] / 2.0)
+        nav_goal.pose.pose.orientation.w = math.cos(pose[2] / 2.0)
+        send_future = self.nav.send_goal_async(nav_goal)
+        while not send_future.done():
+            time.sleep(0.02)
+        self.nav_goal = send_future.result()
+        if self.nav_goal is None or not self.nav_goal.accepted:
+            state.transition('FAILED', 'ZERO', 'work pose goal rejected',
+                             code='NAV_GOAL_REJECTED')
+            return False
+        nav_result = self.nav_goal.get_result_async()
+        deadline = time.monotonic() + float(self.get_parameter('task_timeout_sec').value)
+        while not nav_result.done():
+            if handle.is_cancel_requested:
+                self.nav_goal.cancel_goal_async()
+                state.transition('CANCELED', 'ZERO', 'task canceled', reason='USER_CANCEL')
+                return False
+            if self.robot_status and self.robot_status.remote_override:
+                self.nav_goal.cancel_goal_async()
+                state.transition('INTERRUPTED', 'ZERO', 'remote operator took control',
+                                 reason='REMOTE_OVERRIDE')
+                return False
+            if not self.fresh(self.status_time) or not self.robot_status.safety_permit:
+                self.nav_goal.cancel_goal_async()
+                state.transition('INTERRUPTED', 'ZERO', 'safety dependency became invalid',
+                                 reason='SAFETY_INVALID')
+                return False
+            if time.monotonic() > deadline:
+                self.nav_goal.cancel_goal_async()
+                state.transition('TIMED_OUT', 'ZERO', 'work pose approach timed out',
+                                 reason='TASK_TIMEOUT')
+                return False
+            time.sleep(0.05)
+        self.nav_goal = None
+        return True
+
     def execute_arm(self, handle, goal, state, started, is_stop):
         """Run an arm task. The base stays pinned at ZERO for its whole duration."""
         timeout = float(self.get_parameter('arm_task_timeout_sec').value)
@@ -228,12 +301,33 @@ class TaskManager(Node):
                              code='PLACE_UNSUPPORTED')
             return self.finish(handle, goal, state, False, 'REJECTED', handle.abort)
 
+        # NAVIGATE_TO_WORKPOSE. The arm state machine has this stage but does not
+        # drive the base; that is this node's job (技术方案 §3.12.5).
+        if goal.task_type == 'ARM_GRASP' and str(self.get_parameter('grasp_work_pose').value):
+            if not self.navigate_to_work_pose(handle, goal, state):
+                return self.finish(handle, goal, state, False, state.status, handle.abort)
+
         # The arm may only move while the base is authorised to do nothing.
         # Publishing ZERO here is what makes hr_motion_mux refuse every automatic
         # velocity source for the duration, so "the base must not move" is
         # enforced by the speed chain rather than by everyone remembering.
-        state.transition('RUNNING', 'ZERO', 'arm task active', 0.1)
+        state.transition('RUNNING', 'ZERO', 'arm task active', 0.35)
         self.publish_controls(goal, False, 'ZERO')
+
+        # BASE_STOP_CONFIRM. Wait for the chassis to actually settle before the
+        # arm is even asked; hr_arm_controller re-checks this with its own
+        # four-way interlock, and a task that fails there wastes a whole approach.
+        settle_deadline = time.monotonic() + float(
+            self.get_parameter('base_settle_timeout_sec').value)
+        while not self.base_stopped():
+            if time.monotonic() > settle_deadline:
+                state.transition('FAILED', 'ZERO', 'chassis did not settle',
+                                 code='BASE_NOT_STOPPED')
+                return self.finish(handle, goal, state, False, 'FAILED', handle.abort)
+            if handle.is_cancel_requested:
+                state.transition('CANCELED', 'ZERO', 'task canceled', reason='USER_CANCEL')
+                return self.finish(handle, goal, state, False, 'CANCELED', handle.canceled)
+            time.sleep(0.05)
         feedback = ExecuteTask.Feedback()
         feedback.status = self.publish_state(goal, state)
         handle.publish_feedback(feedback)

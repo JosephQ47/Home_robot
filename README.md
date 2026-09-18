@@ -38,11 +38,31 @@
 
 ---
 
+## 这不是手画的拓扑图
+
+把系统跑起来，用 rclpy 读活的节点与话题拓扑，再渲染成这张图。谁发布了什么，图上就是什么。
+
+<div align="center">
+  <img src="docs/images/ros-graph.svg" alt="从运行中的系统抓取的真实 ROS 计算图：11 个节点，速度链上四个话题各恰好一个发布者" width="100%">
+</div>
+
+「只有一个节点能发最终速度」写在文档里是一句主张，写在这张从运行系统抓取的拓扑里才是一个事实。
+抓取脚本在 [`tools/diagrams/capture_ros_graph.sh`](tools/diagrams/capture_ros_graph.sh)，可以自己跑一遍。
+
+---
+
 ## 系统架构
 
 <div align="center">
   <img src="docs/images/architecture.svg" alt="五层系统架构：L5 业务任务层、L4 感知与规划层、L3 通信与接口层、L2 实时控制与安全层、L1 驱动与执行层" width="100%">
 </div>
+
+<div align="center">
+  <img src="docs/images/robot-layout.svg" alt="本体几何工程视图：侧视与俯视，尺寸取自仓库配置" width="100%">
+</div>
+
+上图是按仓库配置里的真实尺寸画的工程视图——轮廓半径、停止区、臂展、深度有效窗口
+都从对应的 yaml 读出来，改了配置重新生成，图会跟着变。
 
 分层的判据是**职责能不能被抢走**：
 上位机可以崩、可以卡、可以被 Wi-Fi 断开，但都不能影响 SBUS 人工接管和硬件急停；

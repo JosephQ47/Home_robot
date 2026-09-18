@@ -1,0 +1,10 @@
+# Charging dock database. Read by the task layer and the docking server, not by
+# rcl — it deliberately lives outside docks.yaml so that file stays a valid
+# --params-file (only ros__parameters is allowed there).
+docks:
+  home_dock:
+    # Nav2 drives here first; OpenNav Docking takes over from this pose.
+    # 0.60 m back from the contacts, square on, which puts the tag comfortably
+    # inside the colour camera's field of view.
+    staging_pose: {x: 0.0, y: 0.0, yaw: 0.0, frame_id: map}
+    tag_id: 7
