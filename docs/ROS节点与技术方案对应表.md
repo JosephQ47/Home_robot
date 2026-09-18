@@ -36,7 +36,8 @@ ROS 运行时节点名优先采用方案中的名称。
 | 语音采集 | `hr_voice_capture` | `/hr_voice_capture` | 麦克风/文本 → `/voice/transcript_in` | 🔵 | 唤醒门（一次唤醒一条命令、窗口到期自动关闭）+ 可替换 ASR 适配器（[验收](acceptance/语音链路验收.md)）|
 | 语音指令映射 | `hr_voice_command` | `/hr_voice_command` | 转写 → `ExecuteTask(source=VOICE)` | 🟣 | 十一条白名单命令的意图映射与全部拒绝路径；不发布任何速度或舵机接口 |
 | Nav2 短程联调替身 | `hr_local_motion` | `/nav2_local_controller_adapter` | `/goal_pose`、`/follow_target` → `/cmd_vel_nav` | 🟣 | PC 无地图联调用，默认关闭，下游不在即拒绝输出 |
-| Mock 系统 | `hr_simulation` | `/hr_mock_system` | Mock 状态、里程计、IMU、扫描和 Nav2 Action | 🟣 | 全链软件测试入口，不发布速度 |
+| 平面仿真 | `hr_simulation` | `/hr_planar_sim` | `/cmd_vel` → 位姿积分；户型射线投射 → `/scan`、`/odometry/filtered`、TF | 🔵 | **新增**；闭合了 mock 系统从未闭合的一环——速度真的让机器人动起来。模仿 STM32 的限速/斜坡/命令超时，18 条几何单元测试 |
+| Mock 系统 | `hr_simulation` | `/hr_mock_system` | Mock 状态、里程计、IMU、扫描和 Nav2 Action | 🟣 | 纯接口替身，不产生运动 |
 | 机器人模型 | `hr_description` | `/robot_state_publisher` | URDF → TF | ⚪ | 坐标系与固定变换 |
 
 ## 下位机（STM32F407VET6 / FreeRTOS）
