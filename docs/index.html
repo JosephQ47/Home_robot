@@ -205,9 +205,9 @@
 
   <div class="stats">
     <div class="stat"><div class="n">22</div><div class="l">ROS 2 包</div></div>
-    <div class="stat"><div class="n">58</div><div class="l">安全规则单元测试</div></div>
+    <div class="stat"><div class="n">136</div><div class="l">安全规则单元测试</div></div>
     <div class="stat"><div class="n">5</div><div class="l">架构分层</div></div>
-    <div class="stat"><div class="n">4</div><div class="l">FreeRTOS 任务</div></div>
+    <div class="stat"><div class="n">18</div><div class="l">运行时验收项</div></div>
     <div class="stat"><div class="n">1</div><div class="l">最终速度发布者</div></div>
   </div>
 </div>
@@ -403,6 +403,8 @@
   <div class="wrap">
     <h2>快速开始</h2>
     <pre><code># 依赖：Ubuntu 22.04 + ROS 2 Humble
+./scripts/install_deps.sh all      # Nav2 节点组、AprilTag、Docking、vision_msgs
+
 cd upper
 source /opt/ros/humble/setup.bash
 colcon build
@@ -411,10 +413,15 @@ source install/setup.bash
 # 安全 Mock 总入口：不连接硬件，不发布任何速度
 ros2 launch hr_bringup mock.launch.py
 
-# 纯逻辑单元测试（不需要 ROS 运行时）
+# 纯逻辑单元测试：不需要 ROS 运行时，也不需要硬件（136 条）
 python3 -m pytest upper/src/hr_motion_mux/test upper/src/hr_docking/test \
     upper/src/hr_depth_obstacle/test upper/src/hr_arm_controller/test \
-    upper/src/hr_voice_command/test -q</code></pre>
+    upper/src/hr_arm_perception/test upper/src/hr_arm_driver/test \
+    upper/src/hr_voice_command/test upper/src/hr_voice_capture/test tests -q
+
+# 机械臂全链：mock 舵机控制器，PC 上即可跑通完整抓取序列
+ros2 run hr_arm_driver arm_driver --ros-args -p transport:=mock &amp;
+ros2 run hr_arm_controller arm_controller</code></pre>
   </div>
 </section>
 

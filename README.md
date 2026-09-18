@@ -11,7 +11,7 @@
 [![Nav2](https://img.shields.io/badge/Nav2-Navigation-4A90D9)](https://navigation.ros.org/)
 [![License](https://img.shields.io/badge/License-Apache%202.0-D22128)](LICENSE)
 
-<sub>22 个 ROS 2 包 · 58 条安全规则单元测试 · 下位机四路闭环与安全链已实机验收</sub>
+<sub>22 个 ROS 2 包 · 136 条安全规则单元测试 · 18 项运行时验收 · 下位机四路闭环与安全链已实机验收</sub>
 
 </div>
 
@@ -145,10 +145,31 @@ source install/setup.bash
 # 安全 Mock 总入口：不连接硬件，不发布任何速度
 ros2 launch hr_bringup mock.launch.py
 
-# 纯逻辑单元测试（不需要 ROS 运行时）
-cd .. && python3 -m pytest upper/src/hr_motion_mux/test upper/src/hr_docking/test \
+# 纯逻辑单元测试：不需要 ROS 运行时，也不需要硬件（136 条）
+cd .. && python3 -m pytest \
+    upper/src/hr_motion_mux/test upper/src/hr_docking/test \
     upper/src/hr_depth_obstacle/test upper/src/hr_arm_controller/test \
-    upper/src/hr_voice_command/test -q
+    upper/src/hr_arm_perception/test upper/src/hr_arm_driver/test \
+    upper/src/hr_voice_command/test upper/src/hr_voice_capture/test tests -q
+
+# 需要 source 过 overlay 的那部分（8 条）
+python3 -m pytest upper/src/hr_bridge/test upper/src/hr_task_manager/test \
+    upper/src/hr_local_motion/test upper/src/hr_hmmd/test -q
+
+# 机械臂全链（mock 舵机控制器，PC 上即可跑通完整抓取序列）
+ros2 run hr_arm_driver arm_driver --ros-args -p transport:=mock &
+ros2 run hr_arm_controller arm_controller
+
+# 语音链（text 适配器顶替麦克风）
+ros2 run hr_voice_capture voice_capture --ros-args -p asr_adapter:=text -p wake_word:=小家 &
+ros2 topic pub --once /voice/text_in std_msgs/String "data: '小家'"
+ros2 topic pub --once /voice/text_in std_msgs/String "data: '去客厅|0.93'"
+```
+
+上游依赖（Nav2 节点组、AprilTag、OpenNav Docking、vision_msgs 等）用一条命令装齐：
+
+```bash
+./scripts/install_deps.sh all     # 或 core / docking / hardware / python
 ```
 
 ### 工作空间结构
@@ -186,8 +207,10 @@ Home_robot/
 | `hr_motion_mux` | **自动速度源唯一仲裁点**，唯一发布 `/cmd_vel_auto` |
 | `hr_task_manager` | 唯一业务任务仲裁器与状态机 |
 | `hr_web_ui` | 局域网任务入口（禁止发布速度） |
-| `hr_arm_controller` / `hr_arm_perception` / `hr_arm_driver` | 6 轴机械臂抓取状态机、末端视觉、舵机驱动 |
-| `hr_voice_command` / `hr_voice_capture` | 有限指令集语音任务入口 |
+| `hr_arm_controller` | 抓取状态机、六轴逆运动学、`/arm/execute` Action |
+| `hr_arm_perception` | 末端 D435i RGB-D、手眼标定校验、抓取候选 |
+| `hr_arm_driver` | 舵机控制器帧协议；`transport=mock` 可在 PC 跑通全链 |
+| `hr_voice_capture` / `hr_voice_command` | 唤醒门 + 可替换 ASR；白名单意图映射 |
 | `hr_description` · `hr_simulation` · `hr_local_motion` | 模型、Mock 系统、PC 联调替身 |
 
 ---
@@ -224,7 +247,7 @@ AI 写代码的成本趋近于零，成本转移到了「凭什么相信这段�
 | [家庭服务机器人技术方案.md](家庭服务机器人技术方案.md) | 权威技术基线：硬件、分层、模块、时序、协议、验收 |
 | [docs/ROS节点与技术方案对应表.md](docs/ROS节点与技术方案对应表.md) | 代码与方案的逐条对应及成熟度 |
 | [docs/features/](docs/features/) | 各功能模块设计文档与验收标准 |
-| [docs/acceptance/](docs/acceptance/) | 验收步骤与实测证据 |
+| [docs/acceptance/](docs/acceptance/) | 验收步骤与实测证据（速度仲裁、机械臂链路、语音链路） |
 | [docs/项目任务清单.md](docs/项目任务清单.md) | 阶段依赖与阻塞状态 |
 | [upper/README-framework.md](upper/README-framework.md) | ROS 2 框架说明 |
 | [lower/README.md](lower/README.md) | STM32 下位机框架 |

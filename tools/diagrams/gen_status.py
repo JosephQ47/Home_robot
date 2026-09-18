@@ -24,19 +24,23 @@ LEVELS = {
 ROWS = [
     ('STM32 四轮闭环 + 安全链', 'measured', '真实制动 / 急停 / 断链停车 / 过流保护均已实机验收', '—'),
     ('hr_bridge 上下位机协议', 'measured', 'CRC / 序号 / 断链重连实测；/battery_state 待下位机电池帧', '回环·丢帧·乱序'),
-    ('hr_motion_mux 速度仲裁', 'tested', '运行时验收 /cmd_vel_auto publisher 恰为 1；待与真实 Nav2 联调', '12 条单元测试'),
+    ('hr_motion_mux 速度仲裁', 'tested', '运行时验收 /cmd_vel_auto publisher 恰为 1；待与真实 Nav2 联调', '12 条 + 6 项运行时'),
+    ('hr_arm_controller 抓取与 IK', 'tested', '完整抓取序列在 mock 舵机上跑通；连杆长度为占位值', '35 条 + 6 项运行时'),
+    ('hr_arm_driver 舵机链路', 'tested', '帧协议/CRC/重同步完整，mock 后端可端到端；控制器未选型', '14 条单元测试'),
+    ('hr_voice_capture 唤醒与采集', 'tested', '唤醒门与 ASR 适配器完整；麦克风未选型', '12 条 + 6 项运行时'),
     ('hr_task_manager 任务编排', 'tested', '已支持 DOCKING 阶段与授权续发；低电回充分支待电池数据', '生命周期测试'),
     ('hr_web_ui 网页控制台', 'tested', '前后端跑通，Mock / ROS 双适配器', '后端单元测试'),
     ('hr_perception 视觉识别', 'tested', 'CPU YOLO 跑通；正式方案为 RKNN，未转换', '流水线校验'),
-    ('hr_docking AprilTag 定位', 'skeleton', '门控逻辑完整；Tag 实物、外参与 opennav_docking 均未到位', '11 条单元测试'),
+    ('hr_arm_perception 末端视觉', 'skeleton', '标定校验与深度门控完整；D435i 与手眼标定均未到位', '28 条单元测试'),
+    ('hr_docking AprilTag 定位', 'skeleton', '门控逻辑完整；Tag 实物与外参未冻结', '11 条单元测试'),
     ('hr_depth_obstacle 深度障碍', 'skeleton', '门控与地面滤除完整；阈值待 Gemini 2 实测冻结', '11 条单元测试'),
-    ('hr_arm_controller 抓取状态机', 'skeleton', '安全互锁完整；IK 与舵机驱动未实现', '12 条单元测试'),
-    ('hr_voice_command 语音意图', 'skeleton', '白名单映射与拒绝策略完整；麦克风与 ASR 未选型', '12 条单元测试'),
-    ('Nav2 导航栈', 'config', '参数骨架就位，缺已验收地图，未实机跑通', '—'),
+    ('hr_voice_command 语音意图', 'skeleton', '白名单映射与拒绝策略完整；ASR 引擎未绑定', '12 条单元测试'),
+    ('Nav2 / AMCL 节点组', 'config', '节点组与 lifecycle 已接线；速度与 footprint 为占位值，缺已验收地图', '—'),
     ('Collision Monitor 停止区', 'blocked', '停止区多边形仍为空 —— 待实测制动距离后才能冻结', '—'),
     ('Orbbec Gemini 2 接入', 'blocked', '方案已改为 Gemini 2，实物未接入；当前为 RTSP 调试取流', '—'),
-    ('6轴机械臂 + 末端 D435i', 'blocked', '机械臂、舵机控制器、D435i 三者均未到位', '—'),
+    ('6轴机械臂 + 末端 D435i 实物', 'blocked', '机械臂、舵机控制器、D435i 三者均未到位', '—'),
 ]
+
 
 
 def main():
@@ -44,7 +48,7 @@ def main():
     top = 150
     H = top + len(ROWS) * row_h + 112
     out = header(W, H, '模块成熟度 · 实测与未实测分开记',
-                 '「能跑」不是验收结论。下表把实机验收过的能力、只有单元测试的代码'
+                 '「能跑」不是验收结论。下表把实机验收过的能力、只跑过自动化验证的代码 '
                  '和还在等硬件的部分分开陈述')
 
     # legend
