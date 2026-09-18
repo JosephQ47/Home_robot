@@ -11,7 +11,7 @@
 [![Nav2](https://img.shields.io/badge/Nav2-Navigation-4A90D9)](https://navigation.ros.org/)
 [![License](https://img.shields.io/badge/License-Apache%202.0-D22128)](LICENSE)
 
-<sub>22 个 ROS 2 包 · 163 条安全规则单元测试 · 47 项链路验证 · 底盘四轮闭环与安全链实机运行</sub>
+<sub>22 个 ROS 2 包 · 195 条安全规则单元测试 · 54 项链路验证 · 底盘四轮闭环与安全链实机运行</sub>
 
 </div>
 
@@ -156,6 +156,10 @@ python3 web_control/backend/app.py --adapter ros --host 0.0.0.0 --port 8080  # �
 | `apriltag_msgs` 根本不含位姿，原实现假设的字段不存在 | 装上 `apriltag_ros` 之后首次运行 |
 | TF 缓存让相机看不见 Tag 之后仍返回旧位姿 | 改用 TF 后的失效注入 |
 | 停止区多边形写成字符串，节点 configure 直接失败 | 真的去启动它的时候 |
+| **Nav2 直接写 `/cmd_vel`，整条安全链被旁路** | **接入真实 Nav2 后数发布者** |
+| `collision_monitor` 漏出生命周期管理，永远不激活 | 同上 |
+| 扫描时间戳比 TF 新 33 ms，每帧都被丢弃 | 建图质量差，逐层排查到日志 |
+| 仿真器无碰撞检测，机器人穿墙而过 | 对照实验证明 SLAM 无辜之后 |
 
 全部过程记录在 [`docs/acceptance/`](docs/acceptance/)。
 

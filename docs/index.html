@@ -347,8 +347,8 @@
 
   <div class="stats">
     <div class="stat"><div class="n" data-count="22">0</div><div class="l">ROS 2 包</div></div>
-    <div class="stat"><div class="n" data-count="173">0</div><div class="l">安全规则测试</div></div>
-    <div class="stat"><div class="n" data-count="48">0</div><div class="l">链路验证项</div></div>
+    <div class="stat"><div class="n" data-count="195">0</div><div class="l">安全规则测试</div></div>
+    <div class="stat"><div class="n" data-count="54">0</div><div class="l">链路验证项</div></div>
     <div class="stat"><div class="n" data-count="5">0</div><div class="l">架构分层</div></div>
     <div class="stat"><div class="n" data-count="1">0</div><div class="l">最终速度发布者</div></div>
   </div>
@@ -715,6 +715,10 @@
           <tr><td><code>apriltag_msgs</code> 根本不含位姿，原实现假设的字段不存在</td><td>装上 apriltag_ros 后首次运行</td></tr>
           <tr><td>TF 缓存让相机看不见 Tag 之后仍返回旧位姿</td><td>改用 TF 后的失效注入</td></tr>
           <tr><td>停止区多边形写成字符串，节点 configure 直接失败</td><td>真的去启动它的时候</td></tr>
+          <tr><td><strong>Nav2 直接写 <code>/cmd_vel</code>，整条安全链被旁路</strong></td><td><strong>接入真实 Nav2 后数发布者</strong></td></tr>
+          <tr><td><code>collision_monitor</code> 漏出生命周期管理，永远不激活</td><td>同上</td></tr>
+          <tr><td>扫描时间戳比 TF 新 33 ms，每帧都被丢弃</td><td>建图质量差，逐层排查到日志</td></tr>
+          <tr><td>仿真器无碰撞检测，机器人穿墙而过</td><td>对照实验证明 SLAM 无辜之后</td></tr>
           <tr><td>多线程执行器缺 ReentrantCallbackGroup，长任务把自己中断</td><td>语音到机械臂端到端验收</td></tr>
           <tr><td>放置点落在机械臂工作空间之外，抓完放不下</td><td>换上真实连杆长度后的 IK 拒绝</td></tr>
         </tbody>
