@@ -20,14 +20,14 @@ ROS 运行时节点名优先采用方案中的名称。
 | 目标跟踪 | `hr_target_tracker` | `/hr_target_tracker` | `/detections` → `/follow_target` | 🟣 | 同帧深度优先估距，深度失效回落 S3 角窗交叉验证 |
 | 雷达驱动 | （上游 `sllidar_ros2`） | `/sllidar_node` | `/scan` | ⚪ | RPLIDAR S3，配置在 `hr_localization` |
 | EKF | `hr_localization` | `/ekf_filter_node` | `/wheel/odom_raw`、`/imu/data` → `/odometry/filtered` | ⚪ | `odom→base_link` 的唯一发布者 |
-| SLAM 建图 | `hr_localization` | `/slam_toolbox` | `/scan`、TF → `/map` | ⚪ | 异步建图入口，与 AMCL 模式强制互斥 |
-| 地图定位 | `hr_localization` | `/amcl` + `/map_server` | `/map`、`/scan`、TF | ⚪ | 差速运动模型，里程计噪声按 1560 count/rev 编码器分辨率取值；缺地图参数时明确报错 |
-| Nav2 | `hr_navigation` | `/planner_server`、`/controller_server`、`/behavior_server`、`/bt_navigator`、`/waypoint_follower` | Nav2 Action → **`/cmd_vel_nav`** | ⚪ | 五节点 + lifecycle_manager 编排；DWB 速度上限 0.45 m/s、减速 1.5 m/s²，与停止区尺寸同源 |
+| SLAM 建图 | `hr_localization` | `/slam_toolbox` | `/scan`、TF → `/map` | 🔵 | 已用 `hr_planar_sim` 建出 `maps/home1`：241 航点走遍五室，零丢帧，地图尺寸与户型吻合 |
+| 地图定位 | `hr_localization` | `/amcl` + `/map_server` | `/map`、`/scan`、TF | 🔵 | 在 `maps/home1`（SLAM 实建，6.75×7.75 m）上完成定位并发布 `map→odom` |
+| Nav2 | `hr_navigation` | `/planner_server`、`/controller_server`、`/behavior_server`、`/bt_navigator`、`/waypoint_follower` | Nav2 Action → **`/cmd_vel_nav`** | 🔵 | 六节点（含 Collision Monitor）由 lifecycle_manager 编排并全部激活；`controller_server` 与 `behavior_server` 的 `cmd_vel` 经 launch 重映射汇入安全链（[验收](acceptance/真实Nav2速度链验收.md)）|
 | AprilTag 检测 | （上游 `apriltag_ros`） | `/apriltag_node` | RGB → `/detections` + Tag TF | ⚪ | tag36h11，100 mm 印制尺寸，二分之一分辨率检测 |
 | 充电桩定位 | `hr_docking` | `/hr_dock_pose_adapter` | `/detections` + TF + `CameraInfo` → `/detected_dock_pose` | 🔵 | ID / family / 汉明距离 / 判决裕度 / 位姿跳变 / TF 新鲜度六重门控；位姿由 TF 取，Tag—触点偏置换算后输出 |
 | 精对接 | （上游 `opennav_docking`） | `/docking_server` | `DockRobot` → `/cmd_vel_dock` | ⚪ | 低速前向对接，速度仅经 `hr_motion_mux` 进入安全链 |
 | 自动速度仲裁 | `hr_motion_mux` | `/hr_motion_mux` | `/cmd_vel_nav` + `/cmd_vel_dock` → **唯一 `/cmd_vel_auto`** | 🔵 | 阶段互斥选择，切换先归零 300 ms，源过期或授权过期即归零（[mux](acceptance/hr_motion_mux验收.md) · [全链](acceptance/速度链路验收.md)）|
-| Collision Monitor | `hr_navigation` | `/collision_monitor` | `/cmd_vel_auto` + `/scan` → `/cmd_vel` | 🔵 | 0.50×0.60 m 激光停止区，由轮廓 + 171 ms 延迟行程 + 制动距离 + 余量推得；障碍进入即请求零速 |
+| Collision Monitor | `hr_navigation` | `/collision_monitor` | `/cmd_vel_auto` + `/scan` → `/cmd_vel` | 🔵 | 0.50×0.60 m 激光停止区，由轮廓 + 171 ms 延迟行程 + 制动距离 + 余量推得；已纳入 lifecycle_manager，实测为 `/cmd_vel` 的唯一发布者 |
 | 上下位机桥 | `hr_bridge` | `/hr_bridge` | `/cmd_vel`、`/wheel/odom_raw`、`/imu/data`、`/robot_status`、`/battery_state` | 🟢 | CRC16 + 序号 + 心跳；断链重连与命令超时归零实机验证 |
 | 网页任务入口 | `hr_web_ui` | `/hr_web_ui` | HTTP/WS ↔ `/task/execute` | 🔵 | 地图/区域/目标/模式下发，任务队列实时回写；Mock 与 ROS 双适配器 |
 | 机械臂控制 | `hr_arm_controller` | `/hr_arm_controller` | `/arm/execute` Action → `/arm/joint_trajectory` | 🔵 | 抓取状态机 + 六轴解析逆运动学（FK/IK 往返误差 1e-16）+ 四重底盘互锁（[验收](acceptance/机械臂链路验收.md)）|

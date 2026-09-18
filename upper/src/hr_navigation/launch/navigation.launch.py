@@ -17,13 +17,28 @@ from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 
 # Brought up in this order, and that is also the order lifecycle_manager
-# transitions them.
+# transitions them. collision_monitor is managed alongside them even though it
+# is not a planner: it is a lifecycle node, and leaving it out of node_names
+# means it sits unconfigured forever while every other node reports healthy —
+# the laser veto would simply never run, and nothing would say so.
+# (package, executable, node name, remappings)
+#
+# The remapping on controller_server and behavior_server is the single most
+# important line in this file. Both of them publish to a topic literally named
+# "cmd_vel", and in Humble the controller's `cmd_vel_topic` parameter is not
+# read at all — setting it in nav2_params.yaml looks like it works and does
+# nothing. Without the remap the controller and every recovery behaviour write
+# straight onto the final /cmd_vel, bypassing hr_motion_mux and the Collision
+# Monitor completely: the robot then drives during a ZERO phase and drives
+# through a laser stop zone, with no error anywhere.
 NAV2_NODES = [
-    ('nav2_controller', 'controller_server', 'controller_server'),
-    ('nav2_planner', 'planner_server', 'planner_server'),
-    ('nav2_behaviors', 'behavior_server', 'behavior_server'),
-    ('nav2_bt_navigator', 'bt_navigator', 'bt_navigator'),
-    ('nav2_waypoint_follower', 'waypoint_follower', 'waypoint_follower'),
+    ('nav2_controller', 'controller_server', 'controller_server',
+     [('cmd_vel', '/cmd_vel_nav')]),
+    ('nav2_planner', 'planner_server', 'planner_server', []),
+    ('nav2_behaviors', 'behavior_server', 'behavior_server',
+     [('cmd_vel', '/cmd_vel_nav')]),
+    ('nav2_bt_navigator', 'bt_navigator', 'bt_navigator', []),
+    ('nav2_waypoint_follower', 'waypoint_follower', 'waypoint_follower', []),
 ]
 
 
@@ -44,15 +59,18 @@ def generate_launch_description():
                    condition=enabled, output='screen')
 
     nav2 = [Node(package=pkg, executable=exe, name=name, parameters=[params],
-                 condition=enabled, output='screen')
-            for pkg, exe, name in NAV2_NODES]
+                 remappings=remaps, condition=enabled, output='screen')
+            for pkg, exe, name, remaps in NAV2_NODES]
+
+    # The veto transitions first and shuts down last.
+    managed = ['collision_monitor'] + [name for _, _, name, _ in NAV2_NODES]
 
     lifecycle = Node(
         package='nav2_lifecycle_manager', executable='lifecycle_manager',
         name='lifecycle_manager_navigation', output='screen', condition=enabled,
         parameters=[{'autostart': LaunchConfiguration('autostart'),
                      'bond_timeout': 10.0,
-                     'node_names': [name for _, _, name in NAV2_NODES]}])
+                     'node_names': managed}])
 
     return LaunchDescription([
         DeclareLaunchArgument('enable_real_navigation', default_value='false'),
